@@ -79,21 +79,21 @@ export default function ProvidersListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Providers</h2>
           <p className="text-gray-500">Manage service providers and their members</p>
         </div>
         <a
           href="/dashboard/services/provider"
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 self-start sm:self-auto"
         >
           Add Provider
         </a>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <form onSubmit={handleSearch} className="flex-1">
             <input
               type="text"
@@ -106,7 +106,7 @@ export default function ProvidersListPage() {
           <select
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:w-auto w-full"
           >
             <option value="">All Services</option>
             {services.map(s => (
@@ -116,7 +116,7 @@ export default function ProvidersListPage() {
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:w-auto w-full"
           >
             <option value="all">All Status</option>
             <option value="true">Active</option>
@@ -140,35 +140,35 @@ export default function ProvidersListPage() {
             <p className="text-gray-500">Get started by adding your first provider</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-2 md:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Members</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3"></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {providers.map((provider) => (
                   <tr key={provider._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{provider.name}</div>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="font-medium text-gray-900 break-words">{provider.name}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs md:text-sm rounded-full">
                         {provider.service.name}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="space-y-1">
+                    <td className="px-3 py-2 md:px-4 md:py-3 hidden sm:table-cell align-top">
+                      <div className="space-y-1 break-words">
                         {provider.members.map((member, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <span className="text-sm text-gray-900">{member.name}</span>
+                            <span className="text-xs md:text-sm text-gray-900">{member.name}</span>
                             {member.isHead && (
-                              <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">Head</span>
+                              <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] md:text-xs rounded">Head</span>
                             )}
                             {member.phoneNumber && (
                               <span className="text-xs text-gray-500">{member.phoneNumber}</span>
@@ -177,7 +177,7 @@ export default function ProvidersListPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         provider.isActive 
                           ? "bg-green-100 text-green-800" 
@@ -186,19 +186,21 @@ export default function ProvidersListPage() {
                         {provider.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <a
-                        href={`/dashboard/providers/${provider._id}`}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mr-2"
-                      >
-                        View
-                      </a>
-                      <a
-                        href={`/dashboard/providers/${provider._id}/edit`}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Edit
-                      </a>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a
+                          href={`/dashboard/providers/${provider._id}`}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          View
+                        </a>
+                        <a
+                          href={`/dashboard/providers/${provider._id}/edit`}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Edit
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -208,11 +210,11 @@ export default function ProvidersListPage() {
         )}
 
         {total > 10 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
               Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} providers
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-end md:self-auto">
               <button
                 onClick={() => { setPage(p => Math.max(1, p - 1)); loadProviders(Math.max(1, page - 1)); }}
                 disabled={page === 1}
