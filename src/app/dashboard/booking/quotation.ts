@@ -268,7 +268,7 @@ export async function generateQuotationPDF(params: {
       item.serviceName || "—",
       item.variantName || "—",
       (item.priceType || "").replace(/_/g, " ").toUpperCase(),
-      item.priceType === "per_unit" ? String(item.units ?? 0) : "—",
+      item.priceType === "per_unit" || item.priceType === "per_hour" ? String(item.units ?? 0) : "—",
       item.priceType !== "custom" ? `${(item.unitPrice ?? 0).toLocaleString('en-IN')}` : "Custom",
       `${(item.total ?? 0).toLocaleString('en-IN')}`
     ];
