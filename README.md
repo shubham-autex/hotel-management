@@ -20,6 +20,29 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment
+
+Create a `.env.local` in the project root with:
+
+```
+MONGODB_URI=mongodb+srv://USER:PASS@HOST/db
+MONGODB_DB=hotel_admin
+JWT_SECRET=replace-with-long-random-string
+SEED_TOKEN=replace-with-one-time-token
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=Admin@123
+```
+
+## Auth
+- Email/password login at `/login` calls `/api/auth/login`.
+- Protected routes under `/dashboard` via middleware.
+
+## Seeding
+Run once to create admin user:
+```bash
+curl -X POST -H "x-seed-token: $SEED_TOKEN" http://localhost:3000/api/seed
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
