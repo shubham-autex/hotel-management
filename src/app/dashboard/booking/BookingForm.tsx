@@ -537,7 +537,7 @@ export default function BookingForm() {
           <h3 className="text-lg font-semibold text-gray-900">Services</h3>
           <span className="text-xs text-gray-500">Select service, variant and pricing will auto adjust</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-2 md:mx-0">
           <table className="min-w-full text-sm divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-600">

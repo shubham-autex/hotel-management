@@ -46,7 +46,7 @@ export default function ServicesProviderPage() {
         <h2 className="text-2xl font-bold text-gray-900">Add Provider</h2>
         <p className="text-gray-500">Link providers to services and manage members</p>
       </div>
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-8 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-8 shadow-sm">
         {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-800 p-3 rounded">{error}</div>}
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
@@ -79,13 +79,13 @@ export default function ServicesProviderPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                     <input value={m.phoneNumber || ''} onChange={(e) => updateMember(idx, 'phoneNumber', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <label className="flex items-center gap-2">
                       <input type="checkbox" checked={!!m.isHead} onChange={(e) => updateMember(idx, 'isHead', e.target.checked)} className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                       <span className="text-sm text-gray-700">Head</span>
                     </label>
                     {members.length > 1 && (
-                      <button type="button" onClick={() => removeMember(idx)} className="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                      <button type="button" onClick={() => removeMember(idx)} className="text-red-600 hover:text-red-800 text-sm self-start sm:self-auto">Remove</button>
                     )}
                   </div>
                 </div>

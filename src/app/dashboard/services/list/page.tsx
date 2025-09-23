@@ -62,21 +62,21 @@ export default function ServicesListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Services</h2>
           <p className="text-gray-500">Manage your hotel services</p>
         </div>
         <a
           href="/dashboard/services/add"
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 self-start sm:self-auto"
         >
           Add Service
         </a>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <form onSubmit={handleSearch} className="flex-1">
             <input
               type="text"
@@ -89,7 +89,7 @@ export default function ServicesListPage() {
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:w-auto w-full"
           >
             <option value="all">All Status</option>
             <option value="true">Active</option>
@@ -113,28 +113,28 @@ export default function ServicesListPage() {
             <p className="text-gray-500">Get started by adding your first service</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-2 md:mx-0 w-full">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variants & Pricing</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Description</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Variants & Pricing</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3"></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {services.map((service) => (
                   <tr key={service._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{service.name}</div>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="font-medium text-gray-900 break-words">{service.name}</div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 max-w-xs">
-                      <div className="line-clamp-2">{service.description || "—"}</div>
+                    <td className="px-3 py-2 md:px-4 md:py-3 text-gray-600 align-top hidden sm:table-cell">
+                      <div className="text-sm break-words">{service.description || "—"}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="space-y-2">
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">
+                      <div className="space-y-2 break-words">
                         {service.variants.map((variant, index) => (
                           <div key={index} className="">
                             <div className="text-sm font-medium text-gray-900">{variant.name}</div>
@@ -150,12 +150,14 @@ export default function ServicesListPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${service.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{service.isActive ? 'Active' : 'Inactive'}</span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <a href={`/dashboard/services/${service._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mr-2">View</a>
-                      <a href={`/dashboard/services/${service._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a href={`/dashboard/services/${service._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">View</a>
+                        <a href={`/dashboard/services/${service._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -165,11 +167,11 @@ export default function ServicesListPage() {
         )}
 
         {total > 10 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
               Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} services
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-end md:self-auto">
               <button
                 onClick={() => { setPage(p => Math.max(1, p - 1)); loadServices(Math.max(1, page - 1)); }}
                 disabled={page === 1}

@@ -22,7 +22,7 @@ export default function EditClient({ service }: { service: any }) {
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-8 shadow-sm">
+    <div>
       {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-800 p-3 rounded">{error}</div>}
       <ServiceFormClientProxy initial={service} onSubmit={onPatch} saving={saving} />
     </div>
@@ -64,7 +64,7 @@ function ServiceFormClientProxy({ initial, onSubmit, saving }: { initial: any; o
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         <label className="flex items-center">
           <input type="checkbox" checked={state.isActive} onChange={(e) => update('isActive', e.target.checked)} className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
           <span className="ml-2 text-sm text-gray-700">Active</span>
@@ -88,7 +88,7 @@ function ServiceFormClientProxy({ initial, onSubmit, saving }: { initial: any; o
             </div>
             <div className="mt-3 space-y-2">
               {v.pricingElements.map((pe: any, pi: number) => (
-                <div key={pi} className="flex gap-3 items-end">
+                <div key={pi} className="flex flex-col sm:flex-row gap-3 items-end">
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                     <select value={pe.type} onChange={(e) => { const next = [...state.variants]; next[vi].pricingElements[pi].type = e.target.value; update('variants', next); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">

@@ -19,7 +19,7 @@ export default async function ServicesAddPage() {
         <h2 className="text-2xl font-bold text-gray-900">Add Service</h2>
         <p className="text-gray-500">Create a new service with variants and pricing</p>
       </div>
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-8 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-8 shadow-sm">
         <ServiceForm />
       </div>
     </div>

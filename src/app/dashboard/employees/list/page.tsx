@@ -69,7 +69,7 @@ export default function EmployeesListPage() {
           <div className="text-sm text-gray-500">{total} results</div>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 overflow-x-auto -mx-2 md:mx-0">
           <table className="w-full text-sm border-separate border-spacing-y-2">
             <thead>
               <tr className="text-left text-gray-600">
@@ -116,13 +116,13 @@ export default function EmployeesListPage() {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-2">
             <button disabled={page <= 1} onClick={() => { const np = page - 1; setPage(np); load(np); }} className="px-3 py-1.5 border rounded disabled:opacity-50">Prev</button>
             <span className="text-sm">Page {page} of {pages}</span>
             <button disabled={page >= pages} onClick={() => { const np = page + 1; setPage(np); load(np); }} className="px-3 py-1.5 border rounded disabled:opacity-50">Next</button>
           </div>
-          <select value={limit} onChange={(e) => { const l = Number(e.target.value); setLimit(l); load(1, l); }} className="border rounded px-2 py-1 text-sm">
+          <select value={limit} onChange={(e) => { const l = Number(e.target.value); setLimit(l); load(1, l); }} className="border rounded px-2 py-1 text-sm self-end md:self-auto">
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>

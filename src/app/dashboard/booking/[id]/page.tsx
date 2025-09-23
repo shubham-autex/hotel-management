@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { generateBookingPDF } from "../booking-pdf";
 
 type Booking = {
   _id: string;
@@ -39,6 +40,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
   const [auditItems, setAuditItems] = useState<any[]>([]);
   const [previewImg, setPreviewImg] = useState<string | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [company, setCompany] = useState<any>(undefined);
   const [paymentOpen, setPaymentOpen] = useState<null | { type: "received" | "refund" }>(null);
   const [payAmount, setPayAmount] = useState<string>("");
   const [payMode, setPayMode] = useState<"cash" | "online">("cash");
@@ -97,6 +99,12 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           const payData = await payRes.json();
           setPayments(payData.items || []);
         }
+        // Load company profile
+        const cRes = await fetch(`/api/company`, { cache: "no-store" });
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          setCompany(cData || undefined);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -150,7 +158,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
         <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Back to list</a>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm relative">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-6 shadow-sm relative">
         <button
           onClick={openAudit}
           title="View audit logs"
@@ -161,7 +169,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
             <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.75 5.25a.75.75 0 00-1.5 0v5.25c0 .199.079.39.22.53l3 3a.75.75 0 101.06-1.06l-2.78-2.78V7.5z" clipRule="evenodd" />
           </svg>
         </button>
-        <div className="flex items-center gap-2 absolute top-4 right-14">
+        <div className="hidden md:flex items-center gap-2 absolute top-4 right-14">
           <button
             onClick={() => setPaymentOpen({ type: "received" })}
             className="px-3 py-1.5 text-sm rounded-lg border border-green-600 text-green-700 hover:bg-green-50"
@@ -170,6 +178,33 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
             onClick={() => setPaymentOpen({ type: "refund" })}
             className="px-3 py-1.5 text-sm rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50"
           >Refund payment</button>
+          <button
+            onClick={async () => {
+              if (!booking) return;
+              await generateBookingPDF({
+                customerName: booking.customerName,
+                customerPhone: booking.customerPhone,
+                eventName: booking.eventName,
+                startAt: booking.startAt,
+                endAt: booking.endAt,
+                items: booking.items.map(it => ({
+                  serviceName: it.serviceName,
+                  variantName: it.variantName,
+                  priceType: it.priceType,
+                  units: it.units,
+                  unitPrice: it.unitPrice,
+                  total: it.total,
+                })),
+                status: booking.status,
+                payments: payments.map(p => ({ type: p.type, amount: p.amount, mode: p.mode, createdAt: p.createdAt })),
+                subtotal: booking.subtotal,
+                discountAmount: booking.discountAmount || 0,
+                total: booking.total,
+                company,
+              });
+            }}
+            className="px-3 py-1.5 text-sm rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50"
+          >Download PDF</button>
         </div>
         {loading ? (
           <div className="text-center py-8">
@@ -222,7 +257,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-2 md:mx-0">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>

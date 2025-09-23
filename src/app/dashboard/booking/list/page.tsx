@@ -175,7 +175,7 @@ export default function BookingListPage() {
             <p className="text-gray-500">Get started by adding your first booking</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-2 md:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -229,11 +229,11 @@ export default function BookingListPage() {
         )}
 
         {total > 10 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
               Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} bookings
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-end md:self-auto">
               <button
                 onClick={() => { setPage(p => Math.max(1, p - 1)); loadBookings(Math.max(1, page - 1)); }}
                 disabled={page === 1}

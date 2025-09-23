@@ -164,12 +164,12 @@ export default function ServiceForm() {
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Service Variants</h3>
           <button
             type="button"
             onClick={addVariant}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors self-start sm:self-auto"
           >
             Add Variant
           </button>
@@ -178,13 +178,13 @@ export default function ServiceForm() {
         <div className="space-y-6">
           {formData.variants.map((variant, variantIndex) => (
             <div key={variantIndex} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <h4 className="font-medium text-gray-900">Variant {variantIndex + 1}</h4>
                 {formData.variants.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeVariant(variantIndex)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="text-red-600 hover:text-red-800 text-sm self-start sm:self-auto"
                   >
                     Remove
                   </button>
@@ -211,21 +211,14 @@ export default function ServiceForm() {
                     <label className="block text-sm font-medium text-gray-700">
                       Pricing Elements
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => addPricingElement(variantIndex)}
-                      className="text-purple-600 hover:text-purple-800 text-sm"
-                    >
-                      + Add Element
-                    </button>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3 mt-4">
                 {variant.pricingElements.map((element, elementIndex) => (
-                  <div key={elementIndex} className="flex gap-3 items-end">
-                    <div className="flex-1">
+                  <div key={elementIndex} className="flex flex-col sm:flex-row gap-3 items-end">
+                    <div className="w-full sm:flex-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Type
                       </label>
@@ -242,7 +235,7 @@ export default function ServiceForm() {
                       </select>
                     </div>
                     {element.type !== "custom" && (
-                      <div className="flex-1">
+                      <div className="w-full sm:flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Price
                         </label>
@@ -262,7 +255,7 @@ export default function ServiceForm() {
                       <button
                         type="button"
                         onClick={() => removePricingElement(variantIndex, elementIndex)}
-                        className="text-red-600 hover:text-red-800 p-2"
+                        className="text-red-600 hover:text-red-800 p-2 self-start sm:self-auto"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -277,7 +270,7 @@ export default function ServiceForm() {
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         <label className="flex items-center">
           <input
             type="checkbox"
@@ -298,7 +291,7 @@ export default function ServiceForm() {
         </label>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <button
           type="submit"
           disabled={loading}

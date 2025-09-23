@@ -29,7 +29,9 @@ export default async function ServiceEditPage({ params }: { params: Promise<{ id
         <h2 className="text-2xl font-bold text-gray-900">Edit Service</h2>
         <p className="text-gray-500">Update service details, variants and pricing</p>
       </div>
-      <EditClient service={JSON.parse(JSON.stringify(svc))} />
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-8 shadow-sm">
+        <EditClient service={JSON.parse(JSON.stringify(svc))} />
+      </div>
     </div>
   );
 }
