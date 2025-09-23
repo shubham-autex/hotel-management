@@ -89,14 +89,14 @@ function ServiceFormClientProxy({ initial, onSubmit, saving }: { initial: any; o
             <div className="mt-3 space-y-2">
               {v.pricingElements.map((pe: any, pi: number) => (
                 <div key={pi} className="flex flex-col sm:flex-row gap-3 items-end">
-                  <div className="flex-1">
+                  <div className="w-full sm:flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                     <select value={pe.type} onChange={(e) => { const next = [...state.variants]; next[vi].pricingElements[pi].type = e.target.value; update('variants', next); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                       {PRICE_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
                     </select>
                   </div>
                   {pe.type !== 'custom' && (
-                    <div className="flex-1">
+                    <div className="w-full sm:flex-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                       <input type="number" min={0} step={0.01} value={pe.price ?? 0} onChange={(e) => { const next = [...state.variants]; next[vi].pricingElements[pi].price = parseFloat(e.target.value) || 0; update('variants', next); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
                     </div>
