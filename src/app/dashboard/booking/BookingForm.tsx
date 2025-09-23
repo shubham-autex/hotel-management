@@ -538,17 +538,17 @@ export default function BookingForm() {
           <span className="text-xs text-gray-500">Select service, variant and pricing will auto adjust</span>
         </div>
         <div className="overflow-x-auto -mx-2 md:mx-0">
-          <table className="min-w-full text-sm divide-y divide-gray-200 table-fixed">
+          <table className="min-w-[980px] w-full text-sm divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-600">
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[160px]">Service</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden sm:table-cell min-w-[140px]">Variant</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden md:table-cell min-w-[110px]">Pricing</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden md:table-cell min-w-[90px]">Units</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[130px]">Unit/Fixed</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[130px]">Custom</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[140px]">Line Discount</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[100px]">Total</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[180px]">Service</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[160px]">Variant</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[120px]">Pricing</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[100px]">Units</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">Unit/Fixed</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">Custom</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[150px]">Line Discount</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[110px]">Total</th>
                 <th className="px-3 py-2 w-[80px]"></th>
               </tr>
             </thead>
@@ -567,7 +567,7 @@ export default function BookingForm() {
                         disabled={!canQuery || loadingServices}
                       />
                     </td>
-                    <td className="px-3 py-2 hidden sm:table-cell">
+                    <td className="px-3 py-2">
                       <select className="border rounded-lg px-2 py-2 w-full truncate focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.variantName || ""} onChange={(e) => onChangeVariant(it.key, e.target.value)} disabled={!it.serviceId}>
                         <option value="">{variants.length ? "Select variant" : "No variants"}</option>
                         {variants.map((v) => (
@@ -575,25 +575,25 @@ export default function BookingForm() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2 hidden md:table-cell">
+                    <td className="px-3 py-2">
                       <input className="border rounded-lg px-2 py-2 w-28 bg-gray-50 text-gray-700" value={formatPriceTypeDisplay(it.priceType)} readOnly />
                     </td>
-                    <td className="px-3 py-2 hidden md:table-cell">
+                    <td className="px-3 py-2">
                       <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.units ?? 0} onChange={(e) => onChangeField(it.key, "units", Number(e.target.value))} disabled={!(["per_hour", "per_unit"].includes(it.priceType))} />
                     </td>
-                    <td className="px-3 py-2 hidden lg:table-cell">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.unitPrice ?? 0} onChange={(e) => onChangeField(it.key, "unitPrice", Number(e.target.value))} disabled />
                       </div>
                     </td>
-                    <td className="px-3 py-2 hidden lg:table-cell">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.customPrice ?? 0} onChange={(e) => onChangeField(it.key, "customPrice", Number(e.target.value))} disabled={it.priceType !== "custom"} />
                       </div>
                     </td>
-                    <td className="px-3 py-2 hidden lg:table-cell">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.discountAmount ?? 0} onChange={(e) => onChangeField(it.key, "discountAmount", Number(e.target.value))} disabled={it.priceType === "custom"} />
