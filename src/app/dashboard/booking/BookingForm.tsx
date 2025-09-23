@@ -480,7 +480,7 @@ export default function BookingForm() {
     <form onSubmit={onSubmit} className="space-y-8">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Booking details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Name of person" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
           <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Phone number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
           <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Event name" value={eventName} onChange={(e) => setEventName(e.target.value)} />
@@ -541,14 +541,14 @@ export default function BookingForm() {
           <table className="min-w-full text-sm divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-600">
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[180px]">Service</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[150px]">Variant</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[110px]">Pricing</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[90px]">Units</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[130px]">Unit/Fixed</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[130px]">Custom</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[140px]">Line Discount</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider w-[100px]">Total</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[160px]">Service</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden sm:table-cell min-w-[140px]">Variant</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden md:table-cell min-w-[110px]">Pricing</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden md:table-cell min-w-[90px]">Units</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[130px]">Unit/Fixed</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[130px]">Custom</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider hidden lg:table-cell min-w-[140px]">Line Discount</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[100px]">Total</th>
                 <th className="px-3 py-2 w-[80px]"></th>
               </tr>
             </thead>
@@ -567,7 +567,7 @@ export default function BookingForm() {
                         disabled={!canQuery || loadingServices}
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden sm:table-cell">
                       <select className="border rounded-lg px-2 py-2 w-full truncate focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.variantName || ""} onChange={(e) => onChangeVariant(it.key, e.target.value)} disabled={!it.serviceId}>
                         <option value="">{variants.length ? "Select variant" : "No variants"}</option>
                         {variants.map((v) => (
@@ -575,25 +575,25 @@ export default function BookingForm() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden md:table-cell">
                       <input className="border rounded-lg px-2 py-2 w-28 bg-gray-50 text-gray-700" value={formatPriceTypeDisplay(it.priceType)} readOnly />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden md:table-cell">
                       <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.units ?? 0} onChange={(e) => onChangeField(it.key, "units", Number(e.target.value))} disabled={!(["per_hour", "per_unit"].includes(it.priceType))} />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden lg:table-cell">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.unitPrice ?? 0} onChange={(e) => onChangeField(it.key, "unitPrice", Number(e.target.value))} disabled />
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden lg:table-cell">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.customPrice ?? 0} onChange={(e) => onChangeField(it.key, "customPrice", Number(e.target.value))} disabled={it.priceType !== "custom"} />
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 hidden lg:table-cell">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400">₹</span>
                         <input type="number" className="border rounded-lg px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.discountAmount ?? 0} onChange={(e) => onChangeField(it.key, "discountAmount", Number(e.target.value))} disabled={it.priceType === "custom"} />
@@ -615,7 +615,7 @@ export default function BookingForm() {
           </table>
         </div>
         <div className="flex justify-center pt-2">
-          <button type="button" onClick={addRow} className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2 rounded-lg shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">Add service</button>
+          <button type="button" onClick={addRow} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2 rounded-lg shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">Add service</button>
         </div>
       </div>
 
@@ -647,11 +647,11 @@ export default function BookingForm() {
               </div>
             </div>
           </div>
-          <div className="flex justify-end mt-3">
-          <button type="button" onClick={handleDownloadQuotation} disabled={!canDownloadQuotation} className={`mr-3 border px-4 py-2.5 rounded-lg min-w-40 ${canDownloadQuotation ? 'border-purple-600 text-purple-700 hover:bg-purple-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}>
-            Download quotation
-          </button>
-            <button disabled={submitting} className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-2.5 rounded-lg min-w-40 shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mt-3">
+            <button type="button" onClick={handleDownloadQuotation} disabled={!canDownloadQuotation} className={`w-full sm:w-auto border px-4 py-2.5 rounded-lg min-w-40 ${canDownloadQuotation ? 'border-purple-600 text-purple-700 hover:bg-purple-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}>
+              Download quotation
+            </button>
+            <button disabled={submitting} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-2.5 rounded-lg min-w-40 shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">
               {submitting ? "Saving..." : "Save booking"}
             </button>
           </div>

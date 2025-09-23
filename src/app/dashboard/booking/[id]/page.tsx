@@ -150,12 +150,12 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
           <p className="text-gray-500">View booking information</p>
         </div>
-        <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Back to list</a>
+        <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors self-start sm:self-auto">Back to list</a>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-6 shadow-sm relative">
@@ -215,18 +215,18 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           <div className="text-center text-gray-500">Booking not found</div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-500">Event</div>
-                <div className="text-gray-900 font-medium">{booking.eventName}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">Event</div>
+                <div className="text-gray-900 font-medium break-words">{booking.eventName}</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">Status</div>
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">Status</div>
                 <div>
                   <select
                     value={(booking.status || 'pending') as any}
                     onChange={(e) => updateBookingStatus(e.target.value as any)}
-                    className={`px-2 py-1 text-xs font-medium rounded-full border-0 focus:ring-2 focus:ring-purple-500 ${
+                    className={`mt-1 md:mt-0 w-full md:w-auto px-2 py-1 text-xs font-medium rounded-full border-0 focus:ring-2 focus:ring-purple-500 ${
                       (booking.status || 'pending') === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       (booking.status || 'pending') === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                       (booking.status || 'pending') === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -239,21 +239,27 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                   </select>
                 </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">Customer</div>
-                <div className="text-gray-900">{booking.customerName}</div>
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">Customer</div>
+                <div className="text-gray-900 break-words">{booking.customerName}</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">Phone</div>
-                <div className="text-gray-900">{booking.customerPhone || '—'}</div>
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">Phone</div>
+                <div className="text-gray-900 break-all">
+                  {booking.customerPhone ? (
+                    <a href={`tel:${booking.customerPhone}`} className="underline decoration-dotted decoration-gray-400 hover:text-purple-700">
+                      {booking.customerPhone}
+                    </a>
+                  ) : '—'}
+                </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">Start</div>
-                <div className="text-gray-900">{new Date(booking.startAt).toLocaleString()}</div>
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">Start</div>
+                <div className="text-gray-900 break-words">{new Date(booking.startAt).toLocaleString()}</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">End</div>
-                <div className="text-gray-900">{new Date(booking.endAt).toLocaleString()}</div>
+              <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
+                <div className="text-xs md:text-sm text-gray-500">End</div>
+                <div className="text-gray-900 break-words">{new Date(booking.endAt).toLocaleString()}</div>
               </div>
             </div>
 
@@ -261,27 +267,27 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pricing</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Units</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit/Fixed</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custom</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Variant</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Pricing</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Units</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Unit/Fixed</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Custom</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Discount</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {booking.items.map((it, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3">{it.serviceName}</td>
-                      <td className="px-4 py-3">{it.variantName || '—'}</td>
-                      <td className="px-4 py-3">{it.priceType?.split('_').join(' ').toUpperCase()}</td>
-                      <td className="px-4 py-3">{it.units ?? '—'}</td>
-                      <td className="px-4 py-3">{it.unitPrice ?? '—'}</td>
-                      <td className="px-4 py-3">{it.customPrice ?? '—'}</td>
-                      <td className="px-4 py-3">{it.discountAmount ?? 0}</td>
-                      <td className="px-4 py-3">₹{(it.total ?? 0).toFixed(2)}</td>
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top break-words">{it.serviceName}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell break-words">{it.variantName || '—'}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{it.priceType?.split('_').join(' ').toUpperCase()}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{it.units ?? '—'}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{it.unitPrice ?? '—'}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{it.customPrice ?? '—'}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{it.discountAmount ?? 0}</td>
+                      <td className="px-3 py-2 md:px-4 md:py-3 align-top">₹{(it.total ?? 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -300,24 +306,24 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                   <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Mode</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Images</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {payments.map((p) => (
-                        <tr key={p._id}>
-                          <td className="px-4 py-2">
+                        <tr key={p._id} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 md:px-4"> 
                             <span className={`px-2 py-1 rounded-full text-xs ${p.type === 'received' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>{p.type}</span>
                           </td>
-                          <td className="px-4 py-2">₹{Number(p.amount || 0).toFixed(2)}</td>
-                          <td className="px-4 py-2 capitalize">{p.mode}</td>
-                          <td className="px-4 py-2">{new Date(p.createdAt).toLocaleString()}</td>
-                          <td className="px-4 py-2">
+                          <td className="px-3 py-2 md:px-4">₹{Number(p.amount || 0).toFixed(2)}</td>
+                          <td className="px-3 py-2 md:px-4 capitalize hidden sm:table-cell">{p.mode}</td>
+                          <td className="px-3 py-2 md:px-4 hidden sm:table-cell">{new Date(p.createdAt).toLocaleString()}</td>
+                          <td className="px-3 py-2 md:px-4 hidden sm:table-cell">
                             <div className="flex gap-2">
                               {(p.images || []).slice(0, 4).map((src: string, idx: number) => (
                                 <img key={idx} src={src} alt="img" className="w-10 h-10 object-cover rounded border cursor-zoom-in" onClick={() => setPreviewImg(src)} />
@@ -327,7 +333,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-2 max-w-[260px] truncate" title={p.notes || ''}>{p.notes || '—'}</td>
+                          <td className="px-3 py-2 md:px-4 max-w-[260px] truncate hidden sm:table-cell" title={p.notes || ''}>{p.notes || '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -382,6 +388,52 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </div>
+
+      {/* Mobile bottom action bar */}
+      {booking && (
+        <>
+          <div className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white p-3 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => setPaymentOpen({ type: "received" })}
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-green-600 text-green-700 hover:bg-green-50"
+              >Payment</button>
+              <button
+                onClick={() => setPaymentOpen({ type: "refund" })}
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50"
+              >Refund</button>
+              <button
+                onClick={async () => {
+                  await generateBookingPDF({
+                    customerName: booking.customerName,
+                    customerPhone: booking.customerPhone,
+                    eventName: booking.eventName,
+                    startAt: booking.startAt,
+                    endAt: booking.endAt,
+                    items: booking.items.map(it => ({
+                      serviceName: it.serviceName,
+                      variantName: it.variantName,
+                      priceType: it.priceType,
+                      units: it.units,
+                      unitPrice: it.unitPrice,
+                      total: it.total,
+                    })),
+                    status: booking.status,
+                    payments: payments.map(p => ({ type: p.type, amount: p.amount, mode: p.mode, createdAt: p.createdAt })),
+                    subtotal: booking.subtotal,
+                    discountAmount: booking.discountAmount || 0,
+                    total: booking.total,
+                    company,
+                  });
+                }}
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50"
+              >Download</button>
+            </div>
+          </div>
+          {/* Spacer so content isn't hidden behind action bar */}
+          <div className="h-16 md:hidden" />
+        </>
+      )}
 
       {/* Right side slide-over for audit logs */}
       {auditOpen && (

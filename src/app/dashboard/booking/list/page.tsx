@@ -84,22 +84,22 @@ export default function BookingListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Bookings</h2>
           <p className="text-gray-500">Manage your bookings</p>
         </div>
         <a
           href="/dashboard/booking/add"
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 self-start sm:self-auto"
         >
           Add Booking
         </a>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <form onSubmit={handleSearch} className="md:col-span-2">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <form onSubmit={handleSearch} className="flex-1">
             <input
               type="text"
               value={search}
@@ -112,7 +112,7 @@ export default function BookingListPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:w-auto w-full"
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
@@ -121,7 +121,7 @@ export default function BookingListPage() {
             <option value="cancelled">Cancelled</option>
           </select>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:w-auto w-full">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -154,9 +154,6 @@ export default function BookingListPage() {
               </button>
             )}
           </div>
-          <div className="text-sm text-gray-500">
-            {total} booking{total !== 1 ? 's' : ''} found
-          </div>
         </div>
 
         {loading ? (
@@ -179,28 +176,28 @@ export default function BookingListPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Left</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Phone</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Start</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">End</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Total</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Total Left</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3"></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {bookings.map((b) => (
                   <tr key={b._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{b.eventName}</div>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="font-medium text-gray-900 break-words">{b.eventName}</div>
                     </td>
-                    <td className="px-4 py-3">{b.customerName}</td>
-                    <td className="px-4 py-3">{b.customerPhone || "—"}</td>
-                    <td className="px-4 py-3">{new Date(b.startAt).toLocaleString()}</td>
-                    <td className="px-4 py-3">{new Date(b.endAt).toLocaleString()}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top break-words">{b.customerName}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{b.customerPhone || "—"}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{new Date(b.startAt).toLocaleString()}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">{new Date(b.endAt).toLocaleString()}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">
                       <select
                         value={b.status || 'pending'}
                         onChange={(e) => updateBookingStatus(b._id, e.target.value)}
@@ -216,10 +213,12 @@ export default function BookingListPage() {
                         <option value="cancelled">cancelled</option>
                       </select>
                     </td>
-                    <td className="px-4 py-3">₹{b.status !== 'cancelled' ? (b.total ?? 0).toFixed(2) : '—'}</td>
-                    <td className="px-4 py-3">₹{b.status !== 'cancelled' ? (b.totalPaid ?? 0).toFixed(2) : '—'}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <a href={`/dashboard/booking/${b._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">View</a>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">₹{b.status !== 'cancelled' ? (b.total ?? 0).toFixed(2) : '—'}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top hidden sm:table-cell">₹{b.status !== 'cancelled' ? (b.totalPaid ?? 0).toFixed(2) : '—'}</td>
+                    <td className="px-3 py-2 md:px-4 md:py-3 align-top">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a href={`/dashboard/booking/${b._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">View</a>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -228,7 +227,7 @@ export default function BookingListPage() {
           </div>
         )}
 
-        {total > 10 && (
+        {total > 0 && (
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
               Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} bookings
