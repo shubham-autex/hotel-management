@@ -13,6 +13,7 @@
     "html2canvas": "^1.4.1",
     "jose": "^6.1.0",
     "jspdf": "^3.0.3",
+    "lucide-react": "^0.553.0",
     "mongoose": "^8.18.1",
     "next": "15.5.3",
     "react": "19.1.0",
