@@ -1,29 +1,40 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
 
+export type PaymentType = "one_time" | "recurring";
+export type PaymentFrequency = "monthly" | "quarterly" | "half_yearly" | "yearly";
+export type PaymentDirection = "received" | "sent";
+
 export interface IPayment extends Document {
-  bookingId: mongoose.Types.ObjectId;
-  userId: string;
-  type: "received" | "refund";
+  name: string;
+  description?: string;
   amount: number;
-  mode: "cash" | "online";
-  images: string[]; // store URLs or file IDs
-  notes?: string;
+  type: PaymentType;
+  frequency?: PaymentFrequency; // Only for recurring payments
+  direction: PaymentDirection; // received or sent
+  startDate: Date;
+  endDate?: Date; // For recurring payments, when it should end
+  isActive: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true, index: true },
-    userId: { type: String, required: true },
-    type: { type: String, enum: ["received", "refund"], required: true },
+    name: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
     amount: { type: Number, required: true, min: 0 },
-    mode: { type: String, enum: ["cash", "online"], required: true },
-    images: { type: [String], validate: [(arr: string[]) => arr && arr.length >= 1, "At least 1 image is required"], required: true },
-    notes: { type: String },
+    type: { type: String, enum: ["one_time", "recurring"], required: true },
+    frequency: { type: String, enum: ["monthly", "quarterly", "half_yearly", "yearly"], required: false },
+    direction: { type: String, enum: ["received", "sent"], required: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date },
+    isActive: { type: Boolean, default: true },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: true }
 );
 
+PaymentSchema.index({ startDate: -1 });
+PaymentSchema.index({ direction: 1 });
+PaymentSchema.index({ type: 1 });
+
 export const Payment = (models.Payment as Model<IPayment>) || mongoose.model<IPayment>("Payment", PaymentSchema);
-
-
