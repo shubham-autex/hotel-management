@@ -47,8 +47,8 @@ function formatDisplayDateTime(dateString: string): string {
   return date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-// Quick date range presets
-function getDatePresets() {
+// Quick date range presets - will be translated in component
+function getDatePresets(t: any) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -65,10 +65,10 @@ function getDatePresets() {
   next30Days.setDate(today.getDate() + 30);
   
   return {
-    today: { start: formatDate(today), end: formatDate(today), label: "Today" },
-    thisWeek: { start: formatDate(thisWeekStart), end: formatDate(thisWeekEnd), label: "This Week" },
-    thisMonth: { start: formatDate(thisMonthStart), end: formatDate(thisMonthEnd), label: "This Month" },
-    next30Days: { start: formatDate(today), end: formatDate(next30Days), label: "Next 30 Days" },
+    today: { start: formatDate(today), end: formatDate(today), label: t("today") },
+    thisWeek: { start: formatDate(thisWeekStart), end: formatDate(thisWeekEnd), label: t("thisWeek") },
+    thisMonth: { start: formatDate(thisMonthStart), end: formatDate(thisMonthEnd), label: t("thisMonth") },
+    next30Days: { start: formatDate(today), end: formatDate(next30Days), label: t("next30Days") },
   };
 }
 
@@ -76,7 +76,7 @@ export default function BookingListPage() {
   const t = useTranslations("pages.bookings");
   const tCommon = useTranslations("common");
   const defaultDates = getDefaultDates();
-  const datePresets = getDatePresets();
+  const datePresets = getDatePresets(t);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -94,22 +94,22 @@ export default function BookingListPage() {
 
   const validateDates = (start: string, end: string): boolean => {
     if (!start || !end) {
-      setDateError("Both start and end dates are required");
+      setDateError(t("bothDatesRequired"));
       return false;
     }
     const startDt = new Date(start);
     const endDt = new Date(end);
     if (isNaN(startDt.getTime()) || isNaN(endDt.getTime())) {
-      setDateError("Invalid date format");
+      setDateError(t("invalidDateFormat"));
       return false;
     }
     if (startDt > endDt) {
-      setDateError("Start date must be before or equal to end date");
+      setDateError(t("startDateBeforeEnd"));
       return false;
     }
     const diffDays = Math.ceil((endDt.getTime() - startDt.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays > 90) {
-      setDateError("Date range cannot exceed 90 days");
+      setDateError(t("dateRangeMax90"));
       return false;
     }
     setDateError("");
@@ -183,16 +183,16 @@ export default function BookingListPage() {
       if (res.ok) {
         loadBookings(page);
       } else {
-        alert('Failed to update booking status');
+        alert(t('failedToUpdateStatus'));
       }
     } catch (err) {
       console.error(err);
-      alert('Error updating booking status');
+      alert(t('errorUpdatingStatus'));
     }
   };
 
   const handleDelete = async (bookingId: string, eventName: string) => {
-    if (!confirm(`Are you sure you want to delete booking "${eventName}"? This action can be undone from the deleted items page.`)) {
+    if (!confirm(`${t('deleteConfirm')} "${eventName}"? ${t('deleteConfirmNote')}`)) {
       return;
     }
     try {
@@ -201,14 +201,14 @@ export default function BookingListPage() {
       });
       if (res.ok) {
         loadBookings(page);
-        alert('Booking deleted successfully');
+        alert(t('bookingDeleted'));
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data?.error || 'Failed to delete booking');
+        alert(data?.error || t('failedToDelete'));
       }
     } catch (err) {
       console.error(err);
-      alert('Error deleting booking');
+      alert(t('errorDeleting'));
     }
   };
 
@@ -275,7 +275,7 @@ export default function BookingListPage() {
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              Deleted
+              {t("deleted")}
             </a>
           )}
           <a
@@ -283,7 +283,7 @@ export default function BookingListPage() {
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center gap-2 shadow-md"
           >
             <Calendar className="w-4 h-4" />
-            Add Booking
+            {t("addBooking")}
           </a>
         </div>
       </div>
@@ -294,7 +294,7 @@ export default function BookingListPage() {
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Total Revenue</p>
+                <p className="text-sm font-medium text-purple-600">{t("totalRevenue")}</p>
                 <p className="text-2xl font-bold text-purple-900 mt-1">₹{stats.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-purple-200 rounded-lg flex items-center justify-center">
@@ -305,7 +305,7 @@ export default function BookingListPage() {
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Total Bookings</p>
+                <p className="text-sm font-medium text-blue-600">{t("totalBookings")}</p>
                 <p className="text-2xl font-bold text-blue-900 mt-1">{stats.totalBookings}</p>
               </div>
               <div className="w-12 h-12 bg-blue-200 rounded-lg flex items-center justify-center">
@@ -316,7 +316,7 @@ export default function BookingListPage() {
           <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border border-yellow-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-yellow-600">Pending</p>
+                <p className="text-sm font-medium text-yellow-600">{t("pending")}</p>
                 <p className="text-2xl font-bold text-yellow-900 mt-1">{stats.pendingCount}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-200 rounded-lg flex items-center justify-center">
@@ -336,7 +336,7 @@ export default function BookingListPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Filter className="w-4 h-4" />
-              Date Range
+              {t("dateRange")}
               {showDateFilter ? <X className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
             <div className="text-sm text-gray-500">
@@ -348,7 +348,7 @@ export default function BookingListPage() {
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
               {/* Quick Presets */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Quick Select</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">{t("quickSelect")}</label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(datePresets).map(([key, preset]) => (
                     <button
@@ -368,10 +368,10 @@ export default function BookingListPage() {
               
               {/* Custom Date Range */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Custom Range (Max 90 days)</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">{t("customRange")}</label>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("startDate")}</label>
                     <input
                       type="date"
                       value={startDate}
@@ -381,7 +381,7 @@ export default function BookingListPage() {
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                    <label className="block text-xs text-gray-500 mb-1">{t("endDate")}</label>
                     <input
                       type="date"
                       value={endDate}
@@ -410,7 +410,7 @@ export default function BookingListPage() {
               type="text"
               value={search}
               onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              placeholder="Search by customer, event, or phone..."
+              placeholder={t("searchPlaceholder")}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </form>
@@ -420,11 +420,11 @@ export default function BookingListPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:w-48 w-full bg-white"
           >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">{t("allStatus")}</option>
+            <option value="pending">{t("pending")}</option>
+            <option value="confirmed">{t("confirmed")}</option>
+            <option value="completed">{t("completed")}</option>
+            <option value="cancelled">{t("cancelled")}</option>
           </select>
           
           <div className="flex gap-2 sm:w-auto w-full">
@@ -433,16 +433,16 @@ export default function BookingListPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
             >
-              <option value="startAt">Sort by Date</option>
-              <option value="customerName">Sort by Name</option>
-              <option value="total">Sort by Amount</option>
-              <option value="status">Sort by Status</option>
+              <option value="startAt">{t("sortByDate")}</option>
+              <option value="customerName">{t("sortByName")}</option>
+              <option value="total">{t("sortByAmount")}</option>
+              <option value="status">{t("sortByStatus")}</option>
             </select>
             <button
               type="button"
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
               className="px-3 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white"
-              title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
+              title={sortOrder === "asc" ? t("sortDescending") : t("sortAscending")}
             >
               {sortOrder === "asc" ? "↑" : "↓"}
             </button>
@@ -456,7 +456,7 @@ export default function BookingListPage() {
                 onClick={clearFilters}
                 className="text-purple-600 hover:text-purple-800 underline"
               >
-                Clear all filters
+                {t("clearAllFilters")}
               </button>
             )}
           </div>
@@ -465,7 +465,7 @@ export default function BookingListPage() {
         {loading ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <p className="mt-2 text-gray-500">Loading bookings...</p>
+            <p className="mt-2 text-gray-500">{t("loadingBookings")}</p>
           </div>
         ) : bookings.length === 0 ? (
           <div className="text-center py-12">
@@ -474,22 +474,22 @@ export default function BookingListPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No bookings found</h3>
-            <p className="text-gray-500">Get started by adding your first booking</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("noBookingsFound")}</h3>
+            <p className="text-gray-500">{t("getStarted")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto -mx-2 md:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Phone</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Start</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">End</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Total</th>
-                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Total Left</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("event")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("customer")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("phone")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("start")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("end")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("status")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("total")}</th>
+                  <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("totalLeft")}</th>
                   <th className="px-3 py-2 md:px-4 md:py-3"></th>
                 </tr>
               </thead>
@@ -513,10 +513,10 @@ export default function BookingListPage() {
                         onChange={(e) => updateBookingStatus(b._id, e.target.value)}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-lg border focus:ring-2 focus:ring-purple-500 focus:outline-none cursor-pointer transition-all ${getStatusBadgeClass(b.status || 'pending')}`}
                       >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="pending">{t("pending")}</option>
+                        <option value="confirmed">{t("confirmed")}</option>
+                        <option value="completed">{t("completed")}</option>
+                        <option value="cancelled">{t("cancelled")}</option>
                       </select>
                     </td>
                     <td className="px-3 py-3 md:px-4 md:py-4 align-top hidden sm:table-cell">
@@ -534,27 +534,27 @@ export default function BookingListPage() {
                         <a 
                           href={`/dashboard/booking/${b._id}`} 
                           className="px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                          title="View"
+                          title={tCommon("view")}
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">View</span>
+                          <span className="hidden sm:inline">{tCommon("view")}</span>
                         </a>
                         <a 
                           href={`/dashboard/booking/${b._id}/edit`} 
                           className="px-2.5 py-1.5 text-xs border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-1"
-                          title="Edit"
+                          title={tCommon("edit")}
                         >
                           <Edit className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Edit</span>
+                          <span className="hidden sm:inline">{tCommon("edit")}</span>
                         </a>
                         {userRole === "admin" && (
                           <button
                             onClick={() => handleDelete(b._id, b.eventName)}
                             className="px-2.5 py-1.5 text-xs border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
-                            title="Delete"
+                            title={tCommon("delete")}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Delete</span>
+                            <span className="hidden sm:inline">{tCommon("delete")}</span>
                           </button>
                         )}
                       </div>
@@ -569,7 +569,7 @@ export default function BookingListPage() {
         {total > 0 && (
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
-              Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} bookings
+              {t("showing")} {((page - 1) * 10) + 1} {t("to")} {Math.min(page * 10, total)} {t("of")} {total} {t("bookingsCount")}
             </div>
             <div className="flex gap-2 self-end md:self-auto">
               <button
@@ -578,14 +578,14 @@ export default function BookingListPage() {
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors flex items-center gap-1"
               >
                 <ChevronLeft className="w-4 h-4" />
-                Previous
+                {t("previous")}
               </button>
               <button
                 onClick={() => { setPage(p => p + 1); loadBookings(page + 1); }}
                 disabled={page * 10 >= total}
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors flex items-center gap-1"
               >
-                Next
+                {t("next")}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { generateQuotationPDF } from "./quotation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useTranslations } from "next-intl";
 
 type PriceType = "per_unit" | "fixed" | "custom" | "per_hour";
 
@@ -53,6 +54,7 @@ function formatISO(dt?: string) {
 }
 
 export default function BookingForm() {
+  const t = useTranslations("pages.bookings");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [eventName, setEventName] = useState("");
@@ -242,7 +244,7 @@ export default function BookingForm() {
             style={{ position: "absolute", top: menuPos.top, left: menuPos.left, width: menuPos.width }}
           >
             {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">No results</div>
+              <div className="px-3 py-2 text-sm text-gray-500">{t("noBookingsFound")}</div>
             ) : (
               filtered.map((opt) => (
                 <button
@@ -432,10 +434,10 @@ export default function BookingForm() {
         setEndTime("");
         setItems([]);
         setBookingDiscount(0);
-        alert("Booking created");
+        alert(t("bookingCreated"));
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data?.error || "Failed to create booking");
+        alert(data?.error || t("failedToCreate"));
       }
     } finally {
       setSubmitting(false);
@@ -472,21 +474,21 @@ export default function BookingForm() {
         company,
       });
     } catch (e) {
-      alert("Failed to generate PDF");
+      alert(t("failedToCreate"));
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Booking details</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("bookingDetails")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Name of person" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Phone number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Event name" value={eventName} onChange={(e) => setEventName(e.target.value)} />
+          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={t("nameOfPerson")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={t("phoneNumber")} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+          <input className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={t("eventName")} value={eventName} onChange={(e) => setEventName(e.target.value)} />
           <div className="grid grid-cols-2 gap-4 sm:col-span-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Start date</label>
+              <label className="block text-xs text-gray-500 mb-1">{t("startDateLabel")}</label>
               <SearchableSelect
                 options={startDateOptionObjs}
                 value={startDate}
@@ -494,37 +496,37 @@ export default function BookingForm() {
                   setStartDate(v);
                   if (endDate && !endDateOptions.includes(endDate)) setEndDate("");
                 }}
-                placeholder="Select date (dd/mm/yyyy)"
+                placeholder={t("selectDate")}
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Start time</label>
+              <label className="block text-xs text-gray-500 mb-1">{t("startTime")}</label>
               <SearchableSelect
                 options={timeOptions}
                 value={startTime}
                 onChange={setStartTime}
-                placeholder="Select time (hh:mm am/pm)"
+                placeholder={t("selectTime")}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:col-span-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">End date</label>
+              <label className="block text-xs text-gray-500 mb-1">{t("endDateLabel")}</label>
               <SearchableSelect
                 options={endDateOptionObjs}
                 value={endDate}
                 onChange={setEndDate}
-                placeholder={startDate ? "Select date (dd/mm/yyyy)" : "Select start date first"}
+                placeholder={startDate ? t("selectDate") : t("selectStartDateFirst")}
                 disabled={!startDate}
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">End time</label>
+              <label className="block text-xs text-gray-500 mb-1">{t("endTime")}</label>
               <SearchableSelect
                 options={timeOptions}
                 value={endTime}
                 onChange={setEndTime}
-                placeholder={startDate ? "Select time (hh:mm am/pm)" : "Select start date/time first"}
+                placeholder={startDate ? t("selectTime") : t("selectStartDateTimeFirst")}
                 disabled={!startDate}
               />
             </div>
@@ -534,21 +536,21 @@ export default function BookingForm() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Services</h3>
-          <span className="text-xs text-gray-500">Select service, variant and pricing will auto adjust</span>
+          <h3 className="text-lg font-semibold text-gray-900">{t("services")}</h3>
+          <span className="text-xs text-gray-500">{t("selectServiceVariantAuto")}</span>
         </div>
         <div className="overflow-x-auto -mx-2 md:mx-0">
           <table className="min-w-[980px] w-full text-sm divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-600">
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[180px]">Service</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[160px]">Variant</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[120px]">Pricing</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[100px]">Units</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">Unit/Fixed</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">Custom</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[150px]">Line Discount</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[110px]">Total</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[180px]">{t("service")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[160px]">{t("variant")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[120px]">{t("pricing")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[100px]">{t("units")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">{t("unitFixed")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[140px]">{t("custom")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[150px]">{t("lineDiscount")}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase tracking-wider min-w-[110px]">{t("total")}</th>
                 <th className="px-3 py-2 w-[80px]"></th>
               </tr>
             </thead>
@@ -563,13 +565,13 @@ export default function BookingForm() {
                         options={allServices.map((s) => ({ value: s._id, label: s.name }))}
                         value={it.serviceId || ""}
                         onChange={(v) => onSelectService(it.key, v)}
-                        placeholder={!canQuery ? "Select start & end to load" : loadingServices ? "Loading..." : "Select service"}
+                        placeholder={!canQuery ? t("selectStartEndToLoad") : loadingServices ? t("loading") : t("selectService")}
                         disabled={!canQuery || loadingServices}
                       />
                     </td>
                     <td className="px-3 py-2">
                       <select className="border rounded-lg px-2 py-2 w-full truncate focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none" value={it.variantName || ""} onChange={(e) => onChangeVariant(it.key, e.target.value)} disabled={!it.serviceId}>
-                        <option value="">{variants.length ? "Select variant" : "No variants"}</option>
+                        <option value="">{variants.length ? t("selectVariant") : t("noVariants")}</option>
                         {variants.map((v) => (
                           <option key={v.name} value={v.name}>{v.name}</option>
                         ))}
@@ -608,14 +610,14 @@ export default function BookingForm() {
               })}
               {items.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={9}>No services added yet. Add your first service below.</td>
+                  <td className="px-4 py-6 text-center text-gray-500" colSpan={9}>{t("noServicesAdded")}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
         <div className="flex justify-center pt-2">
-          <button type="button" onClick={addRow} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2 rounded-lg shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">Add service</button>
+          <button type="button" onClick={addRow} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2 rounded-lg shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">{t("addService")}</button>
         </div>
       </div>
 
@@ -624,11 +626,11 @@ export default function BookingForm() {
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="divide-y divide-gray-100">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-gray-600">Subtotal</span>
+                <span className="text-gray-600">{t("subtotal")}</span>
                 <span className="text-gray-900 font-medium">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-gray-600">Discount (amount)</span>
+                <span className="text-gray-600">{t("discountAmount")}</span>
                 {hasLineDiscount ? (
                   <div className="flex items-center gap-1">
                     <span className="text-gray-400">₹</span>
@@ -642,17 +644,17 @@ export default function BookingForm() {
                 )}
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-gray-900 font-medium">Total</span>
+                <span className="text-gray-900 font-medium">{t("total")}</span>
                 <span className="text-gray-900 font-semibold">₹{total.toFixed(2)}</span>
               </div>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mt-3">
             <button type="button" onClick={handleDownloadQuotation} disabled={!canDownloadQuotation} className={`w-full sm:w-auto border px-4 py-2.5 rounded-lg min-w-40 ${canDownloadQuotation ? 'border-purple-600 text-purple-700 hover:bg-purple-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}>
-              Download quotation
+              {t("downloadQuotation")}
             </button>
             <button disabled={submitting} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-2.5 rounded-lg min-w-40 shadow-sm hover:from-purple-700 hover:to-purple-800 transition-colors">
-              {submitting ? "Saving..." : "Save booking"}
+              {submitting ? t("saving") : t("saveBooking")}
             </button>
           </div>
         </div>

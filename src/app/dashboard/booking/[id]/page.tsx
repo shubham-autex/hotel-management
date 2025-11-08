@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { generateBookingPDF } from "../booking-pdf";
+import { useTranslations } from "next-intl";
 
 type Booking = {
   _id: string;
@@ -32,6 +33,8 @@ type Booking = {
 };
 
 export default function BookingViewPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = useTranslations("pages.bookings");
+  const tCommon = useTranslations("common");
   const { id } = React.use(params);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,12 +142,12 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        return alert(data?.error || "Failed to update status");
+        return alert(data?.error || t("failedToUpdateStatus"));
       }
       setBooking({ ...booking, status: newStatus });
     } catch (e) {
       console.error(e);
-      alert("Error updating status");
+      alert(t("errorUpdatingStatus"));
     }
   }
 
@@ -152,19 +155,19 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
-            <p className="text-gray-500">View booking information</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t("viewTitle")}</h2>
+            <p className="text-gray-500">{t("viewBookingInfo")}</p>
           </div>
           <div className="flex gap-2 self-start sm:self-auto">
-            <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Back to list</a>
-            {booking && <a href={`/dashboard/booking/${booking._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>}
+            <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">{t("backToList")}</a>
+            {booking && <a href={`/dashboard/booking/${booking._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">{tCommon("edit")}</a>}
           </div>
         </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-6 shadow-sm relative">
         <button
           onClick={openAudit}
-          title="View audit logs"
+          title={t("viewAuditLogs")}
           className="absolute top-4 right-4 p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
         >
           {/* clock icon */}
@@ -176,11 +179,11 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           <button
             onClick={() => setPaymentOpen({ type: "received" })}
             className="px-3 py-1.5 text-sm rounded-lg border border-green-600 text-green-700 hover:bg-green-50"
-          >Accept payment</button>
+          >{t("acceptPayment")}</button>
           <button
             onClick={() => setPaymentOpen({ type: "refund" })}
             className="px-3 py-1.5 text-sm rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50"
-          >Refund payment</button>
+          >{t("refundPayment")}</button>
           <button
             onClick={async () => {
               if (!booking) return;
@@ -207,24 +210,24 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
               });
             }}
             className="px-3 py-1.5 text-sm rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50"
-          >Download PDF</button>
+          >{t("downloadPDF")}</button>
         </div>
         {loading ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <p className="mt-2 text-gray-500">Loading booking...</p>
+            <p className="mt-2 text-gray-500">{t("loadingBooking")}</p>
           </div>
         ) : !booking ? (
-          <div className="text-center text-gray-500">Booking not found</div>
+          <div className="text-center text-gray-500">{t("bookingNotFound")}</div>
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">Event</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("event")}</div>
                 <div className="text-gray-900 font-medium break-words">{booking.eventName}</div>
               </div>
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">Status</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("status")}</div>
                 <div>
                   <select
                     value={(booking.status || 'pending') as any}
@@ -235,19 +238,19 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                       (booking.status || 'pending') === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    <option value="pending">pending</option>
-                    <option value="confirmed">confirmed</option>
-                    <option value="completed">completed</option>
-                    <option value="cancelled">cancelled</option>
+                    <option value="pending">{t("pending")}</option>
+                    <option value="confirmed">{t("confirmed")}</option>
+                    <option value="completed">{t("completed")}</option>
+                    <option value="cancelled">{t("cancelled")}</option>
                   </select>
                 </div>
               </div>
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">Customer</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("customer")}</div>
                 <div className="text-gray-900 break-words">{booking.customerName}</div>
               </div>
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">Phone</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("phone")}</div>
                 <div className="text-gray-900 break-all">
                   {booking.customerPhone ? (
                     <a href={`tel:${booking.customerPhone}`} className="underline decoration-dotted decoration-gray-400 hover:text-purple-700">
@@ -257,11 +260,11 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">Start</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("start")}</div>
                 <div className="text-gray-900 break-words">{new Date(booking.startAt).toLocaleString()}</div>
               </div>
               <div className="md:p-0 md:border-0 p-3 border border-gray-200 rounded-lg">
-                <div className="text-xs md:text-sm text-gray-500">End</div>
+                <div className="text-xs md:text-sm text-gray-500">{t("end")}</div>
                 <div className="text-gray-900 break-words">{new Date(booking.endAt).toLocaleString()}</div>
               </div>
             </div>
@@ -270,14 +273,14 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Variant</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Pricing</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Units</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Unit/Fixed</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Custom</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Discount</th>
-                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("service")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("variant")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("pricing")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("units")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("unitFixed")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("custom")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("lineDiscount")}</th>
+                    <th className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("total")}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -300,21 +303,21 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
             {/* Payments */}
             <div>
               <div className="flex items-center justify-between mt-6 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">Payments</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t("payments")}</h3>
               </div>
               {payments.length === 0 ? (
-                <div className="text-sm text-gray-500">No payments yet</div>
+                <div className="text-sm text-gray-500">{t("noPaymentsYet")}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Mode</th>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Images</th>
-                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Notes</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tCommon("type")}</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("amount")}</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{tCommon("mode")}</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{tCommon("date")}</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t("images")}</th>
+                        <th className="px-3 py-2 md:px-4 md:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{tCommon("notes")}</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
@@ -360,27 +363,27 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                   <table className="text-sm">
                     <tbody>
                       <tr>
-                        <td className="px-3 py-1 text-gray-600">Subtotal</td>
+                        <td className="px-3 py-1 text-gray-600">{t("subtotal")}</td>
                         <td className="px-3 py-1 text-right text-gray-900">₹{subtotal.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-1 text-gray-600">Discount</td>
+                        <td className="px-3 py-1 text-gray-600">{t("discountAmount")}</td>
                         <td className="px-3 py-1 text-right text-gray-900">₹{discount.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-1 text-gray-600">Total</td>
+                        <td className="px-3 py-1 text-gray-600">{t("total")}</td>
                         <td className="px-3 py-1 text-right text-gray-900 font-medium">₹{totalAmount.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-1 text-gray-600">Total paid</td>
+                        <td className="px-3 py-1 text-gray-600">{t("totalPaid")}</td>
                         <td className="px-3 py-1 text-right text-gray-900">₹{paid.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-1 text-gray-600">Total refunded</td>
+                        <td className="px-3 py-1 text-gray-600">{t("totalRefunded")}</td>
                         <td className="px-3 py-1 text-right text-gray-900">₹{totalRefunded.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-1 text-gray-800">Remaining</td>
+                        <td className="px-3 py-1 text-gray-800">{t("remaining")}</td>
                         <td className="px-3 py-1 text-right text-gray-900 font-semibold">₹{booking.status !== 'cancelled' ? remaining.toFixed(2) : '—'}</td>
                       </tr>
                     </tbody>
@@ -400,11 +403,11 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
               <button
                 onClick={() => setPaymentOpen({ type: "received" })}
                 className="flex-1 px-3 py-2 text-sm rounded-lg border border-green-600 text-green-700 hover:bg-green-50"
-              >Payment</button>
+              >{t("payment")}</button>
               <button
                 onClick={() => setPaymentOpen({ type: "refund" })}
                 className="flex-1 px-3 py-2 text-sm rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50"
-              >Refund</button>
+              >{t("refund")}</button>
               <button
                 onClick={async () => {
                   await generateBookingPDF({
@@ -430,7 +433,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                   });
                 }}
                 className="flex-1 px-3 py-2 text-sm rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50"
-              >Download</button>
+              >{t("download")}</button>
             </div>
           </div>
           {/* Spacer so content isn't hidden behind action bar */}
@@ -444,14 +447,14 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           <div className="absolute inset-0 bg-black/20" onClick={() => setAuditOpen(false)} />
           <div className="absolute top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-xl border-l border-gray-200 flex flex-col">
             <div className="p-4 border-b flex items-center justify-between">
-              <div className="font-semibold">Audit Logs</div>
-              <button onClick={() => setAuditOpen(false)} className="p-2 rounded hover:bg-gray-50" aria-label="Close">✕</button>
+              <div className="font-semibold">{t("auditLogs")}</div>
+              <button onClick={() => setAuditOpen(false)} className="p-2 rounded hover:bg-gray-50" aria-label={tCommon("close")}>✕</button>
             </div>
             <div className="p-4 overflow-auto flex-1">
               {auditLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading...</div>
+                <div className="text-center py-8 text-gray-500">{t("loading")}</div>
               ) : auditItems.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No audit logs</div>
+                <div className="text-center py-8 text-gray-500">{t("noAuditLogs")}</div>
               ) : (
                 <div className="space-y-4">
                   {auditItems.map((log) => (
@@ -462,11 +465,11 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                       </div>
                       <div className="p-3 text-sm space-y-1">
                         <div className="text-gray-700">
-                          <span className="font-medium">User: </span>
+                          <span className="font-medium">{t("user")}: </span>
                           <span>{log.user?.email || log.user?.id || "—"}{log.user?.role ? ` (${log.user.role})` : ""}</span>
                         </div>
                         <div className="text-gray-700">
-                          <span className="font-medium">Note: </span>
+                          <span className="font-medium">{t("note")}: </span>
                           <span>{log.note || "—"}</span>
                         </div>
                       </div>
@@ -485,25 +488,25 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
           <div className="absolute inset-0 bg-black/20" onClick={() => setPaymentOpen(null)} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl shadow-xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className="font-semibold">{paymentOpen.type === "received" ? "Accept payment" : "Refund payment"}</div>
-              <button onClick={() => setPaymentOpen(null)} className="p-2 rounded hover:bg-gray-50" aria-label="Close">✕</button>
+              <div className="font-semibold">{paymentOpen.type === "received" ? t("acceptPayment") : t("refundPayment")}</div>
+              <button onClick={() => setPaymentOpen(null)} className="p-2 rounded hover:bg-gray-50" aria-label={tCommon("close")}>✕</button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Amount</label>
-                <input value={payAmount} onChange={(e) => setPayAmount(e.target.value)} type="number" className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter amount" />
+                <label className="block text-xs text-gray-500 mb-1">{t("amount")}</label>
+                <input value={payAmount} onChange={(e) => setPayAmount(e.target.value)} type="number" className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={t("enterAmount")} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Mode</label>
+                <label className="block text-xs text-gray-500 mb-1">{tCommon("mode")}</label>
                 <select value={payMode} onChange={(e) => setPayMode(e.target.value as any)} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                  <option value="cash">Cash</option>
-                  <option value="online">Online</option>
+                  <option value="cash">{tCommon("cash")}</option>
+                  <option value="online">{t("online")}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Images (at least one, auto-compress to ≤ 200KB)</label>
+                <label className="block text-xs text-gray-500 mb-1">{t("images")}</label>
                 <div className="flex items-center gap-2 mb-2">
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50">Upload</button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50">{t("upload")}</button>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
                     const files = Array.from(e.target.files || []);
                     const results: string[] = [];
@@ -527,16 +530,16 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                <textarea value={payNotes} onChange={(e) => setPayNotes(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Optional notes"></textarea>
+                <label className="block text-xs text-gray-500 mb-1">{tCommon("notes")}</label>
+                <textarea value={payNotes} onChange={(e) => setPayNotes(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={t("optionalNotes")}></textarea>
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setPaymentOpen(null)} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => setPaymentOpen(null)} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">{tCommon("cancel")}</button>
                 <button
                   onClick={async () => {
                     if (!booking) return;
-                    if (!payAmount || Number(payAmount) <= 0) return alert("Enter a valid amount");
-                    if (payImages.length < 1) return alert("Add at least one image URL");
+                    if (!payAmount || Number(payAmount) <= 0) return alert(t("enterValidAmount"));
+                    if (payImages.length < 1) return alert(t("addAtLeastOneImage"));
                     setSubmittingPayment(true);
                     try {
                       const res = await fetch(`/api/bookings/${booking._id}/payments`, {
@@ -552,14 +555,14 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                       });
                       if (!res.ok) {
                         const data = await res.json().catch(() => ({}));
-                        return alert(data?.error || "Failed to submit payment");
+                        return alert(data?.error || t("failedToSubmitPayment"));
                       }
                       setPaymentOpen(null);
                       setPayAmount("");
                       setPayMode("cash");
                       setPayImages([]);
                       setPayNotes("");
-                      alert("Payment recorded");
+                      alert(t("paymentRecorded"));
                     } finally {
                       setSubmittingPayment(false);
                     }
@@ -567,7 +570,7 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
                   disabled={submittingPayment}
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 disabled:opacity-60"
                 >
-                  {submittingPayment ? "Saving..." : paymentOpen.type === "received" ? "Accept" : "Refund"}
+                  {submittingPayment ? t("saving") : paymentOpen.type === "received" ? t("accept") : t("refund")}
                 </button>
               </div>
             </div>
