@@ -218,6 +218,7 @@ export default function BookingListPage() {
                     <td className="px-3 py-2 md:px-4 md:py-3 align-top">
                       <div className="flex flex-wrap justify-end gap-2">
                         <a href={`/dashboard/booking/${b._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">View</a>
+                        <a href={`/dashboard/booking/${b._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>
                       </div>
                     </td>
                   </tr>

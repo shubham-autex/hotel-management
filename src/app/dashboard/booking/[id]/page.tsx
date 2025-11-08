@@ -150,13 +150,16 @@ export default function BookingViewPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
-          <p className="text-gray-500">View booking information</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
+            <p className="text-gray-500">View booking information</p>
+          </div>
+          <div className="flex gap-2 self-start sm:self-auto">
+            <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Back to list</a>
+            {booking && <a href={`/dashboard/booking/${booking._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>}
+          </div>
         </div>
-        <a href="/dashboard/booking/list" className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors self-start sm:self-auto">Back to list</a>
-      </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-4 md:p-6 shadow-sm relative">
         <button
