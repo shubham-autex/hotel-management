@@ -1,12 +1,14 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
 
 export type PaymentLogType = "received" | "sent";
+export type PaymentMode = "cash" | "card" | "bank_transfer" | "upi" | "cheque" | "other";
 
 export interface IPaymentLog extends Document {
   paymentId: mongoose.Types.ObjectId;
   amount: number;
   date: Date;
   type: PaymentLogType;
+  mode: PaymentMode;
   notes?: string;
   user?: {
     id: string;
@@ -23,6 +25,7 @@ const PaymentLogSchema = new Schema<IPaymentLog>(
     amount: { type: Number, required: true, min: 0 },
     date: { type: Date, required: true },
     type: { type: String, enum: ["received", "sent"], required: true },
+    mode: { type: String, enum: ["cash", "card", "bank_transfer", "upi", "cheque", "other"], required: true, default: "cash" },
     notes: { type: String, trim: true },
     user: {
       id: { type: String },

@@ -9,6 +9,7 @@ const logSchema = z.object({
   amount: z.number().min(0),
   date: z.string().transform((s) => new Date(s)),
   type: z.enum(["received", "sent"]),
+  mode: z.enum(["cash", "card", "bank_transfer", "upi", "cheque", "other"]),
   notes: z.string().optional(),
 });
 

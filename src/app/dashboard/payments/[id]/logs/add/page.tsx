@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { DollarSign, ArrowLeft } from "lucide-react";
 
+type PaymentMode = "cash" | "card" | "bank_transfer" | "upi" | "cheque" | "other";
+
 export default function AddPaymentLogPage() {
   const router = useRouter();
   const params = useParams();
@@ -12,6 +14,7 @@ export default function AddPaymentLogPage() {
   const [amount, setAmount] = useState<number>(0);
   const [date, setDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [type, setType] = useState<"received" | "sent">("received");
+  const [mode, setMode] = useState<PaymentMode>("cash");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +32,7 @@ export default function AddPaymentLogPage() {
           amount,
           date,
           type,
+          mode,
           notes: notes || undefined,
         }),
       });
@@ -108,6 +112,25 @@ export default function AddPaymentLogPage() {
               >
                 <option value="received">Received</option>
                 <option value="sent">Sent</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payment Mode <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as PaymentMode)}
+                required
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="upi">UPI</option>
+                <option value="cheque">Cheque</option>
+                <option value="other">Other</option>
               </select>
             </div>
           </div>

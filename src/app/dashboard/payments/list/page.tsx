@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Plus, Search, Edit, Trash2, Eye, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { formatDateDDMMYYYY } from "@/lib/dateFormat";
 
 interface Payment {
   _id: string;
@@ -243,7 +244,7 @@ export default function PaymentsListPage() {
                       </td>
                       <td className="px-3 py-3 md:px-4 md:py-4 align-top hidden sm:table-cell">
                         <div className="text-sm text-gray-600">
-                          {new Date(payment.startDate).toLocaleDateString()}
+                          {formatDateDDMMYYYY(payment.startDate)}
                         </div>
                       </td>
                       <td className="px-3 py-3 md:px-4 md:py-4 align-top">

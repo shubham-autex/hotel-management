@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { Edit, Trash2, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { formatDateDDMMYYYY } from "@/lib/dateFormat";
+
+type PaymentMode = "cash" | "card" | "bank_transfer" | "upi" | "cheque" | "other";
 
 interface PaymentLog {
   _id: string;
   amount: number;
   date: string;
   type: "received" | "sent";
+  mode: PaymentMode;
   notes?: string;
   user?: {
     id: string;
@@ -16,6 +20,15 @@ interface PaymentLog {
   };
   createdAt: string;
 }
+
+const modeLabels: Record<PaymentMode, string> = {
+  cash: "Cash",
+  card: "Card",
+  bank_transfer: "Bank Transfer",
+  upi: "UPI",
+  cheque: "Cheque",
+  other: "Other",
+};
 
 export default function PaymentLogsClient({
   paymentId,
@@ -26,7 +39,7 @@ export default function PaymentLogsClient({
 }) {
   const [logs, setLogs] = useState<PaymentLog[]>(initialLogs);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ amount: number; date: string; type: "received" | "sent"; notes: string } | null>(null);
+  const [editForm, setEditForm] = useState<{ amount: number; date: string; type: "received" | "sent"; mode: PaymentMode; notes: string } | null>(null);
 
   const handleDelete = async (logId: string) => {
     if (!confirm("Are you sure you want to delete this log entry?")) return;
@@ -64,6 +77,7 @@ export default function PaymentLogsClient({
       amount: log.amount,
       date: `${year}-${month}-${day}`,
       type: log.type,
+      mode: log.mode,
       notes: log.notes || "",
     });
   };
@@ -170,6 +184,21 @@ export default function PaymentLogsClient({
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Payment Mode</label>
+                <select
+                  value={editForm?.mode || "cash"}
+                  onChange={(e) => setEditForm({ ...editForm!, mode: e.target.value as PaymentMode })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="upi">UPI</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
                   value={editForm?.notes || ""}
@@ -229,7 +258,8 @@ export default function PaymentLogsClient({
                 </div>
               </div>
               <div className="text-xs text-gray-600 space-y-1">
-                <p>Date: {new Date(log.date).toLocaleDateString()}</p>
+                <p>Date: {formatDateDDMMYYYY(log.date)}</p>
+                <p>Mode: {modeLabels[log.mode]}</p>
                 {log.notes && <p>Notes: {log.notes}</p>}
                 {log.user && (
                   <p className="text-gray-500">

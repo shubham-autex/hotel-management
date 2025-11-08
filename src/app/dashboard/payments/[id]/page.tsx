@@ -6,6 +6,7 @@ import { PaymentLog } from "@/models/PaymentLog";
 import { DollarSign, ArrowLeft, ArrowDownRight, ArrowUpRight, Plus, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import PaymentLogsClient from "./PaymentLogsClient";
+import { formatDateDDMMYYYY } from "@/lib/dateFormat";
 
 export default async function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
@@ -106,7 +107,7 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</label>
               <p className="text-sm text-gray-700 mt-1">
-                {new Date(payment.startDate).toLocaleDateString()}
+                {formatDateDDMMYYYY(payment.startDate)}
               </p>
             </div>
 
@@ -114,7 +115,7 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
               <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</label>
               <p className="text-sm text-gray-700 mt-1">
-                {new Date(payment.endDate).toLocaleDateString()}
+                {formatDateDDMMYYYY(payment.endDate)}
               </p>
             </div>
             )}

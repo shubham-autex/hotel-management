@@ -8,6 +8,7 @@ const patchSchema = z.object({
   amount: z.number().min(0).optional(),
   date: z.string().transform((s) => new Date(s)).optional(),
   type: z.enum(["received", "sent"]).optional(),
+  mode: z.enum(["cash", "card", "bank_transfer", "upi", "cheque", "other"]).optional(),
   notes: z.string().optional(),
 });
 
