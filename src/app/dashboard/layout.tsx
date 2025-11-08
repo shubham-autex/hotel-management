@@ -11,6 +11,7 @@ import {
   Building2,
   Menu,
   X,
+  Warehouse,
 } from "lucide-react";
 
 interface NavItem {
@@ -67,6 +68,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           label: "Employees",
           icon: <Users className="w-5 h-5" />,
         },
+        {
+          href: "/dashboard/stocks/list",
+          label: "Stock Inventory",
+          icon: <Warehouse className="w-5 h-5" />,
+        },
       ],
     },
     {
@@ -97,6 +103,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     if (href === "/dashboard/booking/list") {
       return pathname.startsWith("/dashboard/booking");
+    }
+    if (href === "/dashboard/stocks/list") {
+      return pathname.startsWith("/dashboard/stocks");
     }
     return pathname.startsWith(href);
   };
