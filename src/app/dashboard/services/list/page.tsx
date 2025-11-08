@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface PricingElement {
   type: string;
@@ -23,6 +24,8 @@ interface Service {
 }
 
 export default function ServicesListPage() {
+  const t = useTranslations("pages.services");
+  const tCommon = useTranslations("common");
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -99,8 +102,8 @@ export default function ServicesListPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Services</h2>
-          <p className="text-gray-500">Manage your hotel services</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t("listTitle")}</h2>
+          <p className="text-gray-500">{t("description")}</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {userRole === "admin" && (
@@ -108,14 +111,14 @@ export default function ServicesListPage() {
               href="/dashboard/services/deleted"
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
-              Deleted Items
+              {tCommon("delete")}d Items
             </a>
           )}
           <a
             href="/dashboard/services/add"
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
           >
-            Add Service
+            {t("addTitle")}
           </a>
         </div>
       </div>
@@ -127,7 +130,7 @@ export default function ServicesListPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search services..."
+              placeholder={tCommon("search")}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </form>

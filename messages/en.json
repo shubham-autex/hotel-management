@@ -1,0 +1,196 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "bookings": "Bookings",
+    "services": "Services",
+    "providers": "Providers",
+    "employees": "Employees",
+    "stockInventory": "Stock Inventory",
+    "payments": "Payments",
+    "companyProfile": "Company Profile",
+    "settings": "Settings",
+    "management": "Management",
+    "main": "Main",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "search": "Search",
+    "filter": "Filter",
+    "active": "Active",
+    "inactive": "Inactive",
+    "name": "Name",
+    "description": "Description",
+    "amount": "Amount",
+    "date": "Date",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "areYouSure": "Are you sure?",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "submit": "Submit",
+    "create": "Create",
+    "update": "Update",
+    "remove": "Remove",
+    "notes": "Notes",
+    "type": "Type",
+    "mode": "Mode",
+    "language": "Language"
+  },
+  "booking": {
+    "title": "Bookings",
+    "addBooking": "Add Booking",
+    "editBooking": "Edit Booking",
+    "customerName": "Customer Name",
+    "customerPhone": "Customer Phone",
+    "eventName": "Event Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "total": "Total",
+    "totalPaid": "Total Paid",
+    "balance": "Balance"
+  },
+  "payment": {
+    "title": "Payments",
+    "addPayment": "Add Payment",
+    "editPayment": "Edit Payment",
+    "paymentName": "Payment Name",
+    "direction": "Direction",
+    "received": "Received",
+    "sent": "Sent",
+    "paymentType": "Payment Type",
+    "oneTime": "One Time",
+    "recurring": "Recurring",
+    "frequency": "Frequency",
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "halfYearly": "6-Monthly",
+    "yearly": "Yearly",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "transactionLogs": "Transaction Logs",
+    "addLog": "Add Log",
+    "totalReceived": "Total Received",
+    "totalSent": "Total Sent",
+    "paymentMode": "Payment Mode",
+    "cash": "Cash",
+    "card": "Card",
+    "bankTransfer": "Bank Transfer",
+    "upi": "UPI",
+    "cheque": "Cheque",
+    "other": "Other"
+  },
+  "service": {
+    "title": "Services",
+    "addService": "Add Service",
+    "editService": "Edit Service",
+    "serviceName": "Service Name",
+    "price": "Price",
+    "category": "Category"
+  },
+  "provider": {
+    "title": "Providers",
+    "addProvider": "Add Provider",
+    "editProvider": "Edit Provider",
+    "providerName": "Provider Name",
+    "contact": "Contact"
+  },
+  "employee": {
+    "title": "Employees",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "employeeName": "Employee Name",
+    "email": "Email",
+    "role": "Role",
+    "phone": "Phone"
+  },
+  "stock": {
+    "title": "Stock Inventory",
+    "addStock": "Add Stock",
+    "editStock": "Edit Stock",
+    "itemName": "Item Name",
+    "quantity": "Quantity"
+  },
+  "company": {
+    "title": "Company Profile",
+    "companyName": "Company Name",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Login",
+    "invalidCredentials": "Invalid credentials"
+  },
+  "pages": {
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Overview of your hotel management system"
+    },
+    "bookings": {
+      "title": "Bookings",
+      "description": "Manage all bookings and reservations",
+      "listTitle": "Booking List",
+      "addTitle": "Add New Booking",
+      "editTitle": "Edit Booking",
+      "viewTitle": "Booking Details"
+    },
+    "services": {
+      "title": "Services",
+      "description": "Manage services and pricing",
+      "listTitle": "Service List",
+      "addTitle": "Add New Service",
+      "editTitle": "Edit Service",
+      "viewTitle": "Service Details"
+    },
+    "providers": {
+      "title": "Providers",
+      "description": "Manage service providers",
+      "listTitle": "Provider List",
+      "addTitle": "Add New Provider",
+      "editTitle": "Edit Provider",
+      "viewTitle": "Provider Details"
+    },
+    "employees": {
+      "title": "Employees",
+      "description": "Manage employees and staff",
+      "listTitle": "Employee List",
+      "addTitle": "Add New Employee",
+      "editTitle": "Edit Employee",
+      "viewTitle": "Employee Details"
+    },
+    "stocks": {
+      "title": "Stock Inventory",
+      "description": "Manage inventory items",
+      "listTitle": "Stock List",
+      "addTitle": "Add New Stock Item",
+      "editTitle": "Edit Stock Item",
+      "viewTitle": "Stock Details"
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Manage payments and transactions",
+      "listTitle": "Payment List",
+      "addTitle": "Add New Payment",
+      "editTitle": "Edit Payment",
+      "viewTitle": "Payment Details"
+    },
+    "company": {
+      "title": "Company Profile",
+      "description": "Manage company information"
+    }
+  }
+}
+

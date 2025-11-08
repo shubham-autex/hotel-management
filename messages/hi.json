@@ -1,0 +1,196 @@
+{
+  "common": {
+    "dashboard": "डैशबोर्ड",
+    "bookings": "बुकिंग",
+    "services": "सेवाएं",
+    "providers": "प्रदाता",
+    "employees": "कर्मचारी",
+    "stockInventory": "स्टॉक इन्वेंटरी",
+    "payments": "भुगतान",
+    "companyProfile": "कंपनी प्रोफ़ाइल",
+    "settings": "सेटिंग्स",
+    "management": "प्रबंधन",
+    "main": "मुख्य",
+    "add": "जोड़ें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "back": "वापस",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय",
+    "name": "नाम",
+    "description": "विवरण",
+    "amount": "राशि",
+    "date": "तारीख",
+    "status": "स्थिति",
+    "actions": "कार्रवाई",
+    "view": "देखें",
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफल",
+    "confirm": "पुष्टि करें",
+    "areYouSure": "क्या आप निश्चित हैं?",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "close": "बंद करें",
+    "submit": "जमा करें",
+    "create": "बनाएं",
+    "update": "अपडेट करें",
+    "remove": "हटाएं",
+    "notes": "नोट्स",
+    "type": "प्रकार",
+    "mode": "मोड",
+    "language": "भाषा"
+  },
+  "booking": {
+    "title": "बुकिंग",
+    "addBooking": "बुकिंग जोड़ें",
+    "editBooking": "बुकिंग संपादित करें",
+    "customerName": "ग्राहक का नाम",
+    "customerPhone": "ग्राहक का फोन",
+    "eventName": "इवेंट का नाम",
+    "startDate": "शुरुआती तारीख",
+    "endDate": "अंतिम तारीख",
+    "total": "कुल",
+    "totalPaid": "कुल भुगतान",
+    "balance": "शेष"
+  },
+  "payment": {
+    "title": "भुगतान",
+    "addPayment": "भुगतान जोड़ें",
+    "editPayment": "भुगतान संपादित करें",
+    "paymentName": "भुगतान का नाम",
+    "direction": "दिशा",
+    "received": "प्राप्त",
+    "sent": "भेजा गया",
+    "paymentType": "भुगतान प्रकार",
+    "oneTime": "एक बार",
+    "recurring": "आवर्ती",
+    "frequency": "आवृत्ति",
+    "monthly": "मासिक",
+    "quarterly": "त्रैमासिक",
+    "halfYearly": "6-मासिक",
+    "yearly": "वार्षिक",
+    "startDate": "शुरुआती तारीख",
+    "endDate": "अंतिम तारीख",
+    "transactionLogs": "लेनदेन लॉग",
+    "addLog": "लॉग जोड़ें",
+    "totalReceived": "कुल प्राप्त",
+    "totalSent": "कुल भेजा गया",
+    "paymentMode": "भुगतान मोड",
+    "cash": "नकद",
+    "card": "कार्ड",
+    "bankTransfer": "बैंक ट्रांसफर",
+    "upi": "UPI",
+    "cheque": "चेक",
+    "other": "अन्य"
+  },
+  "service": {
+    "title": "सेवाएं",
+    "addService": "सेवा जोड़ें",
+    "editService": "सेवा संपादित करें",
+    "serviceName": "सेवा का नाम",
+    "price": "मूल्य",
+    "category": "श्रेणी"
+  },
+  "provider": {
+    "title": "प्रदाता",
+    "addProvider": "प्रदाता जोड़ें",
+    "editProvider": "प्रदाता संपादित करें",
+    "providerName": "प्रदाता का नाम",
+    "contact": "संपर्क"
+  },
+  "employee": {
+    "title": "कर्मचारी",
+    "addEmployee": "कर्मचारी जोड़ें",
+    "editEmployee": "कर्मचारी संपादित करें",
+    "employeeName": "कर्मचारी का नाम",
+    "email": "ईमेल",
+    "role": "भूमिका",
+    "phone": "फोन"
+  },
+  "stock": {
+    "title": "स्टॉक इन्वेंटरी",
+    "addStock": "स्टॉक जोड़ें",
+    "editStock": "स्टॉक संपादित करें",
+    "itemName": "आइटम का नाम",
+    "quantity": "मात्रा"
+  },
+  "company": {
+    "title": "कंपनी प्रोफ़ाइल",
+    "companyName": "कंपनी का नाम",
+    "address": "पता",
+    "phone": "फोन",
+    "email": "ईमेल"
+  },
+  "auth": {
+    "login": "लॉगिन",
+    "logout": "लॉगआउट",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "loginButton": "लॉगिन करें",
+    "invalidCredentials": "अमान्य क्रेडेंशियल"
+  },
+  "pages": {
+    "dashboard": {
+      "title": "डैशबोर्ड",
+      "description": "आपके होटल प्रबंधन प्रणाली का अवलोकन"
+    },
+    "bookings": {
+      "title": "बुकिंग",
+      "description": "सभी बुकिंग और आरक्षण प्रबंधित करें",
+      "listTitle": "बुकिंग सूची",
+      "addTitle": "नई बुकिंग जोड़ें",
+      "editTitle": "बुकिंग संपादित करें",
+      "viewTitle": "बुकिंग विवरण"
+    },
+    "services": {
+      "title": "सेवाएं",
+      "description": "सेवाएं और मूल्य निर्धारण प्रबंधित करें",
+      "listTitle": "सेवा सूची",
+      "addTitle": "नई सेवा जोड़ें",
+      "editTitle": "सेवा संपादित करें",
+      "viewTitle": "सेवा विवरण"
+    },
+    "providers": {
+      "title": "प्रदाता",
+      "description": "सेवा प्रदाताओं को प्रबंधित करें",
+      "listTitle": "प्रदाता सूची",
+      "addTitle": "नया प्रदाता जोड़ें",
+      "editTitle": "प्रदाता संपादित करें",
+      "viewTitle": "प्रदाता विवरण"
+    },
+    "employees": {
+      "title": "कर्मचारी",
+      "description": "कर्मचारियों और स्टाफ को प्रबंधित करें",
+      "listTitle": "कर्मचारी सूची",
+      "addTitle": "नया कर्मचारी जोड़ें",
+      "editTitle": "कर्मचारी संपादित करें",
+      "viewTitle": "कर्मचारी विवरण"
+    },
+    "stocks": {
+      "title": "स्टॉक इन्वेंटरी",
+      "description": "इन्वेंटरी आइटम प्रबंधित करें",
+      "listTitle": "स्टॉक सूची",
+      "addTitle": "नया स्टॉक आइटम जोड़ें",
+      "editTitle": "स्टॉक आइटम संपादित करें",
+      "viewTitle": "स्टॉक विवरण"
+    },
+    "payments": {
+      "title": "भुगतान",
+      "description": "भुगतान और लेनदेन प्रबंधित करें",
+      "listTitle": "भुगतान सूची",
+      "addTitle": "नया भुगतान जोड़ें",
+      "editTitle": "भुगतान संपादित करें",
+      "viewTitle": "भुगतान विवरण"
+    },
+    "company": {
+      "title": "कंपनी प्रोफ़ाइल",
+      "description": "कंपनी की जानकारी प्रबंधित करें"
+    }
+  }
+}
+

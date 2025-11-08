@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DollarSign, Plus, Search, Edit, Trash2, Eye, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { formatDateDDMMYYYY } from "@/lib/dateFormat";
+import { useTranslations } from "next-intl";
 
 interface Payment {
   _id: string;
@@ -19,6 +20,9 @@ interface Payment {
 }
 
 export default function PaymentsListPage() {
+  const t = useTranslations("common");
+  const tPayment = useTranslations("payment");
+  const tPage = useTranslations("pages.payments");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -108,7 +112,7 @@ export default function PaymentsListPage() {
   if (userRole !== "admin") {
     return (
       <div className="p-4 text-center text-gray-500">
-        Only admins can access payments.
+        {t("error")}: Only admins can access payments.
       </div>
     );
   }
@@ -118,15 +122,15 @@ export default function PaymentsListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Payments</h2>
-          <p className="text-gray-500 mt-1">Manage received and sent payments</p>
+          <h2 className="text-3xl font-bold text-gray-900">{tPayment("title")}</h2>
+          <p className="text-gray-500 mt-1">{tPage("description")}</p>
         </div>
         <a
           href="/dashboard/payments/add"
           className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center gap-2 shadow-md self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          Add Payment
+          {tPayment("addPayment")}
         </a>
       </div>
 
@@ -142,7 +146,7 @@ export default function PaymentsListPage() {
                 setPage(1);
                 setSearch(e.target.value);
               }}
-              placeholder="Search by name or description..."
+              placeholder={t("search")}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>

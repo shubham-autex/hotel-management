@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Calendar, Search, Filter, X, ChevronLeft, ChevronRight, Eye, Edit, Trash2, DollarSign, Clock } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type Booking = {
   _id: string;
@@ -72,6 +73,8 @@ function getDatePresets() {
 }
 
 export default function BookingListPage() {
+  const t = useTranslations("pages.bookings");
+  const tCommon = useTranslations("common");
   const defaultDates = getDefaultDates();
   const datePresets = getDatePresets();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -262,8 +265,8 @@ export default function BookingListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Bookings</h2>
-          <p className="text-gray-500 mt-1">Manage and track your bookings</p>
+          <h2 className="text-3xl font-bold text-gray-900">{t("listTitle")}</h2>
+          <p className="text-gray-500 mt-1">{t("description")}</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {userRole === "admin" && (

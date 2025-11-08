@@ -1,9 +1,15 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 export default function DashboardHome() {
+  const t = useTranslations("pages.dashboard");
+  
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Welcome to your hotel management overview</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t("title")}</h1>
+        <p className="text-gray-500">{t("description")}</p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm hover:shadow-md transition-shadow">

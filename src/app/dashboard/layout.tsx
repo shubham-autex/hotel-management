@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "./logout-button";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   Warehouse,
   DollarSign,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface NavItem {
   href: string;
@@ -29,6 +31,7 @@ interface NavSection {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const t = useTranslations("common");
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -37,56 +40,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navSections: NavSection[] = [
     {
-      title: "Main",
+      title: t("main"),
       items: [
         {
           href: "/dashboard",
-          label: "Dashboard",
+          label: t("dashboard"),
           icon: <LayoutDashboard className="w-5 h-5" />,
         },
         {
           href: "/dashboard/booking/list",
-          label: "Bookings",
+          label: t("bookings"),
           icon: <Calendar className="w-5 h-5" />,
         },
       ],
     },
     {
-      title: "Management",
+      title: t("management"),
       items: [
         {
           href: "/dashboard/services/list",
-          label: "Services",
+          label: t("services"),
           icon: <Package className="w-5 h-5" />,
         },
         {
           href: "/dashboard/providers",
-          label: "Providers",
+          label: t("providers"),
           icon: <Users className="w-5 h-5" />,
         },
         {
           href: "/dashboard/employees/list",
-          label: "Employees",
+          label: t("employees"),
           icon: <Users className="w-5 h-5" />,
         },
         {
           href: "/dashboard/stocks/list",
-          label: "Stock Inventory",
+          label: t("stockInventory"),
           icon: <Warehouse className="w-5 h-5" />,
         },
         {
           href: "/dashboard/payments/list",
-          label: "Payments",
+          label: t("payments"),
           icon: <DollarSign className="w-5 h-5" />,
         },
       ],
     },
     {
-      title: "Settings",
+      title: t("settings"),
       items: [
         {
           href: "/dashboard/company",
-          label: "Company Profile",
+          label: t("companyProfile"),
           icon: <Building2 className="w-5 h-5" />,
         },
       ],
@@ -228,10 +231,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
                 <img src="/logo-s.jpg" alt="Logo" className="w-7 h-7 rounded" />
               </div>
-              <div className="font-semibold text-gray-900">Dashboard</div>
+              <div className="font-semibold text-gray-900">{t("dashboard")}</div>
             </div>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <LogoutButton />
+          </div>
         </header>
 
         {/* Page Content */}
