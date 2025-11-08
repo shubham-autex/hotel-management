@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const data = bodySchema.parse(json);
 
-    const svc = await Service.findById(data.serviceId).lean();
+    const svc = await Service.findOne({ _id: data.serviceId, deletedAt: null }).lean();
     if (!svc) return NextResponse.json({ error: "Service not found" }, { status: 404 });
 
     const created = await Provider.create({
@@ -62,7 +62,16 @@ export async function GET(req: NextRequest) {
     const serviceId = url.searchParams.get("serviceId") || "";
     const isActive = url.searchParams.get("isActive");
 
+    const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
+    
     const filter: any = {};
+    // Filter out deleted items unless admin explicitly requests them
+    if (!showDeleted) {
+      filter.deletedAt = null;
+    } else {
+      filter.deletedAt = { $ne: null };
+    }
+    
     if (q) filter.name = { $regex: q, $options: "i" };
     if (serviceId) filter.service = serviceId;
     if (isActive !== null) filter.isActive = isActive === "true";

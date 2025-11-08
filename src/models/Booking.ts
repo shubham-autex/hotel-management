@@ -27,6 +27,7 @@ export interface IBooking extends Document {
   discountAmount?: number; // booking-level discount if no line discounts used
   total: number;
   notes?: string;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +58,7 @@ const BookingSchema = new Schema<IBooking>(
     discountAmount: { type: Number, min: 0, default: 0 },
     total: { type: Number, min: 0, required: true },
     notes: { type: String, trim: true },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

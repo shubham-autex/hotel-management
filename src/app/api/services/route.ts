@@ -71,7 +71,16 @@ export async function GET(req: NextRequest) {
     const q = url.searchParams.get("q") || "";
     const isActive = url.searchParams.get("isActive");
 
+    const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
+    
     const filter: any = {};
+    // Filter out deleted items unless admin explicitly requests them
+    if (!showDeleted) {
+      filter.deletedAt = null;
+    } else {
+      filter.deletedAt = { $ne: null };
+    }
+    
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },

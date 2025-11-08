@@ -53,6 +53,7 @@ const patchSchema = z.object({
   endAt: z.string().transform((s) => new Date(s)).optional(),
   items: z.array(bookingItemSchema).min(1).optional(),
   discountAmount: z.number().min(0).optional(),
+  deletedAt: z.null().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -74,11 +75,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Handle items update - need to recalculate totals
     if (parsed.data.items) {
       const serviceIds = parsed.data.items.map((i) => i.serviceId);
-      const services = await Service.find({ _id: { $in: serviceIds } }).lean();
+      const services = await Service.find({ _id: { $in: serviceIds }, deletedAt: null }).lean();
+      if (services.length !== serviceIds.length) {
+        return NextResponse.json({ error: "One or more services not found or deleted" }, { status: 404 });
+      }
       const serviceById = new Map(services.map((s) => [String(s._id), s]));
 
       // Overlap check for any service where allowOverlap = false
-      const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap).map((s: any) => String(s._id));
+      const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap && !s.deletedAt).map((s: any) => String(s._id));
       if (nonOverlapServiceIds.length > 0) {
         const startAt = parsed.data.startAt || booking.startAt;
         const endAt = parsed.data.endAt || booking.endAt;
@@ -88,6 +92,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
           ],
           "items.serviceId": { $in: nonOverlapServiceIds },
+          deletedAt: null,
         }).countDocuments();
         if (conflicts > 0) {
           return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
@@ -138,6 +143,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             { startAt: { $lt: newEndAt }, endAt: { $gt: newStartAt } },
           ],
           "items.serviceId": { $in: nonOverlapServiceIds },
+          deletedAt: null,
         }).countDocuments();
         if (conflicts > 0) {
           return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
@@ -158,6 +164,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Update only the provided fields and collect changes
     const changes: { key: string; oldValue: any; newValue: any }[] = [];
+    
+    // Handle restore (deletedAt: null)
+    if (parsed.data.deletedAt === null) {
+      const oldDeletedAt = booking.deletedAt;
+      booking.deletedAt = undefined;
+      changes.push({ key: 'deletedAt', oldValue: oldDeletedAt, newValue: null });
+    }
     const simpleFields: (keyof typeof parsed.data)[] = ['status', 'eventName', 'customerName', 'customerPhone', 'notes'];
     simpleFields.forEach(key => {
       const newVal = parsed.data[key];
@@ -224,6 +237,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
     return NextResponse.json({ message: "Booking updated successfully" });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await connectToDatabase();
+
+    const token = req.cookies.get(AUTH_COOKIE)?.value;
+    const payload = token ? await verifyAuthToken(token) : null;
+    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const id = (await params).id;
+    const booking = await Booking.findById(id);
+    if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Soft delete
+    booking.deletedAt = new Date();
+    await booking.save();
+
+    // Write audit log
+    try {
+      await BookingAudit.create({
+        bookingId: booking._id,
+        action: "deleted",
+        changes: [{ key: "deletedAt", oldValue: null, newValue: booking.deletedAt }],
+        user: { id: payload.sub, email: payload.email, role: payload.role },
+        note: "Booking was soft deleted",
+      });
+    } catch {}
+
+    return NextResponse.json({ message: "Booking deleted successfully" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

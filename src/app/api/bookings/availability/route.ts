@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     }
 
-    const serviceFilter: any = { isActive: true };
+    const serviceFilter: any = { isActive: true, deletedAt: null };
     if (q) serviceFilter.name = { $regex: q, $options: "i" };
 
     const [services, overlappingBookings] = await Promise.all([
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
           { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
         ],
         status: { $ne: "cancelled" },
+        deletedAt: null,
       })
         .select({ items: 1, startAt: 1, endAt: 1 })
         .lean(),

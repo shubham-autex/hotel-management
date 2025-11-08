@@ -17,6 +17,7 @@ export interface IService extends Document {
   variants: IServiceVariant[];
   isActive: boolean;
   allowOverlap?: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,7 @@ const ServiceSchema = new Schema<IService>(
     variants: [ServiceVariantSchema],
     isActive: { type: Boolean, default: true },
     allowOverlap: { type: Boolean, default: false },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

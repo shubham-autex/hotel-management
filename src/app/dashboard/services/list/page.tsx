@@ -29,6 +29,7 @@ export default function ServicesListPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const loadServices = async (pageNum: number = page) => {
     setLoading(true);
@@ -52,12 +53,46 @@ export default function ServicesListPage() {
   };
 
   useEffect(() => {
+    // Get user role
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUserRole(data.user?.role || null);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => {
     loadServices(1);
   }, [search, filterActive]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     loadServices(1);
+  };
+
+  const handleDelete = async (serviceId: string, serviceName: string) => {
+    if (!confirm(`Are you sure you want to delete service "${serviceName}"? This action can be undone from the deleted items page.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/services/${serviceId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        loadServices(page);
+        alert('Service deleted successfully');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to delete service');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting service');
+    }
   };
 
   return (
@@ -67,12 +102,22 @@ export default function ServicesListPage() {
           <h2 className="text-2xl font-bold text-gray-900">Services</h2>
           <p className="text-gray-500">Manage your hotel services</p>
         </div>
-        <a
-          href="/dashboard/services/add"
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 self-start sm:self-auto"
-        >
-          Add Service
-        </a>
+        <div className="flex gap-2 self-start sm:self-auto">
+          {userRole === "admin" && (
+            <a
+              href="/dashboard/services/deleted"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Deleted Items
+            </a>
+          )}
+          <a
+            href="/dashboard/services/add"
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
+          >
+            Add Service
+          </a>
+        </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
@@ -157,6 +202,14 @@ export default function ServicesListPage() {
                       <div className="flex flex-wrap justify-end gap-2">
                         <a href={`/dashboard/services/${service._id}`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">View</a>
                         <a href={`/dashboard/services/${service._id}/edit`} className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Edit</a>
+                        {userRole === "admin" && (
+                          <button
+                            onClick={() => handleDelete(service._id, service.name)}
+                            className="px-3 py-1 text-sm border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

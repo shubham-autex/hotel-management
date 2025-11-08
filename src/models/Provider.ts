@@ -11,6 +11,7 @@ export interface IProvider extends Document {
   service: mongoose.Types.ObjectId;
   members: IProviderMember[];
   isActive: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,7 @@ const ProviderSchema = new Schema<IProvider>(
     service: { type: Schema.Types.ObjectId, ref: "Service", required: true },
     members: { type: [ProviderMemberSchema], default: [] },
     isActive: { type: Boolean, default: true },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

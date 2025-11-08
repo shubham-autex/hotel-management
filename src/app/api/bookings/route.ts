@@ -61,19 +61,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     }
 
-    // Load services referenced, to verify allowOverlap and names
+    // Load services referenced, to verify allowOverlap and names (exclude deleted)
     const serviceIds = items.map((i) => i.serviceId);
-    const services = await Service.find({ _id: { $in: serviceIds } }).lean();
+    const services = await Service.find({ _id: { $in: serviceIds }, deletedAt: null }).lean();
     const serviceById = new Map(services.map((s) => [String(s._id), s]));
 
     // Overlap check for any service where allowOverlap = false
-    const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap).map((s: any) => String(s._id));
+    const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap && !s.deletedAt).map((s: any) => String(s._id));
     if (nonOverlapServiceIds.length > 0) {
       const conflicts = await Booking.find({
         $or: [
           { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
         ],
         "items.serviceId": { $in: nonOverlapServiceIds },
+        deletedAt: null,
       }).countDocuments();
       if (conflicts > 0) {
         return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
@@ -177,17 +178,52 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get("status")?.trim() || "";
     const sortBy = url.searchParams.get("sortBy") || "startAt";
     const sortOrder = url.searchParams.get("sortOrder") || "desc";
-
+    const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
+    const startDateParam = url.searchParams.get("startDate");
+    const endDateParam = url.searchParams.get("endDate");
+    
     const filter: any = {};
-    if (q) {
-      filter.$or = [
-        { customerName: { $regex: q, $options: "i" } },
-        { customerPhone: { $regex: q, $options: "i" } },
-        { eventName: { $regex: q, $options: "i" } },
-      ];
+    const andConditions: any[] = [];
+    
+    // Filter out deleted items unless admin explicitly requests them
+    if (!showDeleted) {
+      filter.deletedAt = null;
+    } else {
+      filter.deletedAt = { $ne: null };
     }
+    
+    // Date range filter - filter bookings that overlap with the requested date range
+    if (startDateParam && endDateParam) {
+      const startDate = new Date(startDateParam);
+      const endDate = new Date(endDateParam);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      
+      // Find bookings where the booking's date range overlaps with the filter range
+      // Booking overlaps if: booking.startAt <= filter.endDate AND booking.endAt >= filter.startDate
+      andConditions.push(
+        { startAt: { $lte: endDate } },
+        { endAt: { $gte: startDate } }
+      );
+    }
+    
+    if (q) {
+      andConditions.push({
+        $or: [
+          { customerName: { $regex: q, $options: "i" } },
+          { customerPhone: { $regex: q, $options: "i" } },
+          { eventName: { $regex: q, $options: "i" } },
+        ]
+      });
+    }
+    
     if (status) {
-      filter.status = status;
+      andConditions.push({ status });
+    }
+    
+    // Combine all conditions
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
     }
 
     // Build sort object

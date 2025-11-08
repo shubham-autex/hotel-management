@@ -32,6 +32,7 @@ export default function ProvidersListPage() {
   const [search, setSearch] = useState("");
   const [filterService, setFilterService] = useState("");
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const loadProviders = async (pageNum: number = page) => {
     setLoading(true);
@@ -65,6 +66,16 @@ export default function ProvidersListPage() {
   };
 
   useEffect(() => {
+    // Get user role
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUserRole(data.user?.role || null);
+        }
+      } catch {}
+    })();
     loadServices();
   }, []);
 
@@ -77,6 +88,27 @@ export default function ProvidersListPage() {
     loadProviders(1);
   };
 
+  const handleDelete = async (providerId: string, providerName: string) => {
+    if (!confirm(`Are you sure you want to delete provider "${providerName}"? This action can be undone from the deleted items page.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/providers/${providerId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        loadProviders(page);
+        alert('Provider deleted successfully');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to delete provider');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting provider');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -84,12 +116,22 @@ export default function ProvidersListPage() {
           <h2 className="text-2xl font-bold text-gray-900">Providers</h2>
           <p className="text-gray-500">Manage service providers and their members</p>
         </div>
-        <a
-          href="/dashboard/services/provider"
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 self-start sm:self-auto"
-        >
-          Add Provider
-        </a>
+        <div className="flex gap-2 self-start sm:self-auto">
+          {userRole === "admin" && (
+            <a
+              href="/dashboard/providers/deleted"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Deleted Items
+            </a>
+          )}
+          <a
+            href="/dashboard/services/provider"
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
+          >
+            Add Provider
+          </a>
+        </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
@@ -200,6 +242,14 @@ export default function ProvidersListPage() {
                         >
                           Edit
                         </a>
+                        {userRole === "admin" && (
+                          <button
+                            onClick={() => handleDelete(provider._id, provider.name)}
+                            className="px-3 py-1 text-sm border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
