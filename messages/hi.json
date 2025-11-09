@@ -44,7 +44,12 @@
     "type": "प्रकार",
     "mode": "मोड",
     "language": "भाषा",
-    "cash": "नकद"
+    "cash": "नकद",
+    "hotelAdmin": "होटल एडमिन",
+    "managementPanel": "प्रबंधन पैनल",
+    "closeMenu": "मेनू बंद करें",
+    "toggleMenu": "मेनू टॉगल करें",
+    "allRightsReserved": "सभी अधिकार सुरक्षित"
   },
   "booking": {
     "title": "बुकिंग",
@@ -133,7 +138,20 @@
     "email": "ईमेल",
     "password": "पासवर्ड",
     "loginButton": "लॉगिन करें",
-    "invalidCredentials": "अमान्य क्रेडेंशियल"
+    "invalidCredentials": "अमान्य क्रेडेंशियल",
+    "loginTitle": "लॉगिन",
+    "welcomeBack": "एडमिन पैनल में वापस स्वागत है",
+    "username": "उपयोगकर्ता नाम",
+    "usernamePlaceholder": "उपयोगकर्ता नाम",
+    "passwordPlaceholder": "पासवर्ड",
+    "showPassword": "पासवर्ड दिखाएं",
+    "hidePassword": "पासवर्ड छुपाएं",
+    "signingIn": "साइन इन हो रहा है...",
+    "loginNow": "अभी लॉगिन करें",
+    "loginFailed": "लॉगिन विफल",
+    "somethingWentWrong": "कुछ गलत हो गया",
+    "welcomeToHotelAdmin": "होटल एडमिन में स्वागत है",
+    "manageHotelOperations": "हमारे व्यापक एडमिन पैनल के साथ अपने होटल संचालन को कुशलतापूर्वक प्रबंधित करें"
   },
   "pages": {
     "dashboard": {

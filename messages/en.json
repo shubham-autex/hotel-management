@@ -44,7 +44,12 @@
     "type": "Type",
     "mode": "Mode",
     "language": "Language",
-    "cash": "Cash"
+    "cash": "Cash",
+    "hotelAdmin": "Hotel Admin",
+    "managementPanel": "Management Panel",
+    "allRightsReserved": "All rights reserved",
+    "closeMenu": "Close menu",
+    "toggleMenu": "Toggle menu"
   },
   "booking": {
     "title": "Bookings",
@@ -133,7 +138,20 @@
     "email": "Email",
     "password": "Password",
     "loginButton": "Login",
-    "invalidCredentials": "Invalid credentials"
+    "invalidCredentials": "Invalid credentials",
+    "loginTitle": "LOGIN",
+    "welcomeBack": "Welcome back to admin panel",
+    "username": "Username",
+    "usernamePlaceholder": "Username",
+    "passwordPlaceholder": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "signingIn": "Signing in...",
+    "loginNow": "Login Now",
+    "loginFailed": "Login failed",
+    "somethingWentWrong": "Something went wrong",
+    "welcomeToHotelAdmin": "Welcome to Hotel Admin",
+    "manageHotelOperations": "Manage your hotel operations efficiently with our comprehensive admin panel"
   },
   "pages": {
     "dashboard": {
