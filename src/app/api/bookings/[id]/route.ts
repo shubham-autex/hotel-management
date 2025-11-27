@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { FilterQuery, Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { Booking } from "@/models/Booking";
-import { BookingAudit } from "@/models/BookingAudit";
-import { Service } from "@/models/Service";
+import { Booking, type IBooking, type IBookingItem } from "@/models/Booking";
+import { BookingAudit, type IAuditChange } from "@/models/BookingAudit";
+import { Service, type IService } from "@/models/Service";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(booking);
   } catch (err) {
+    console.error("Failed to fetch booking", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -56,6 +58,8 @@ const patchSchema = z.object({
   deletedAt: z.null().optional(),
 });
 
+type PatchPayload = z.infer<typeof patchSchema>;
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
@@ -68,74 +72,97 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const json = await req.json();
     const parsed = patchSchema.safeParse(json);
     if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    const data: PatchPayload = parsed.data;
 
     const booking = await Booking.findById(id);
     if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    const initialStartAt = booking.startAt;
+    const initialEndAt = booking.endAt;
+    const initialSubtotal = booking.subtotal;
+    const initialTotal = booking.total;
+    const initialDiscountAmount = booking.discountAmount ?? 0;
+    const initialDeletedAt = booking.deletedAt ?? null;
+    let previousItemsSnapshot: IBookingItem[] | null = null;
+
     // Handle items update - need to recalculate totals
-    if (parsed.data.items) {
-      const serviceIds = parsed.data.items.map((i) => i.serviceId);
-      const services = await Service.find({ _id: { $in: serviceIds }, deletedAt: null }).lean();
-      if (services.length !== serviceIds.length) {
+    if (data.items) {
+      const serviceObjectIds = data.items.map((item) => new Types.ObjectId(item.serviceId));
+      const services = await Service.find({ _id: { $in: serviceObjectIds }, deletedAt: null }).lean<IService[]>();
+      if (services.length !== serviceObjectIds.length) {
         return NextResponse.json({ error: "One or more services not found or deleted" }, { status: 404 });
       }
-      const serviceById = new Map(services.map((s) => [String(s._id), s]));
+      const serviceById = new Map(services.map((s: any) => [s._id.toString(), s]));
 
       // Overlap check for any service where allowOverlap = false
-      const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap && !s.deletedAt).map((s: any) => String(s._id));
+      const nonOverlapServiceIds = services.filter((s) => !s.allowOverlap && !s.deletedAt).map((s) => s._id);
       if (nonOverlapServiceIds.length > 0) {
-        const startAt = parsed.data.startAt || booking.startAt;
-        const endAt = parsed.data.endAt || booking.endAt;
-        const conflicts = await Booking.find({
+        const startAt = data.startAt ?? booking.startAt;
+        const endAt = data.endAt ?? booking.endAt;
+        const conflictFilter: FilterQuery<IBooking> = {
           _id: { $ne: booking._id }, // Exclude current booking
           $or: [
             { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
           ],
           "items.serviceId": { $in: nonOverlapServiceIds },
           deletedAt: null,
-        }).countDocuments();
+        };
+        const conflicts = await Booking.find(conflictFilter).countDocuments();
         if (conflicts > 0) {
           return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
         }
       }
 
-      const computedItems = parsed.data.items.map((it) => {
-        const svc = serviceById.get(it.serviceId);
-        const total = calculateItemTotal(it);
+      previousItemsSnapshot = booking.items.map<IBookingItem>((item) => {
+        const docLike = item as unknown as { toObject?: () => IBookingItem };
+        if (typeof docLike.toObject === "function") {
+          return docLike.toObject();
+        }
+        return { ...item } as IBookingItem;
+      });
+
+      const computedItems: IBookingItem[] = data.items.map((item) => {
+        const svc = serviceById.get(item.serviceId);
+        const total = calculateItemTotal(item);
         return {
-          serviceId: it.serviceId,
+          serviceId: new Types.ObjectId(item.serviceId),
           serviceName: svc?.name ?? "Unknown",
           allowOverlap: !!svc?.allowOverlap,
-          variantName: it.variantName,
-          priceType: it.priceType,
-          unitPrice: it.unitPrice,
-          units: it.units,
-          customPrice: it.customPrice,
-          discountAmount: it.discountAmount ?? 0,
+          variantName: item.variantName,
+          priceType: item.priceType,
+          unitPrice: item.unitPrice,
+          units: item.units,
+          customPrice: item.customPrice,
+          discountAmount: item.discountAmount ?? 0,
           total,
         };
       });
 
       const subtotal = computedItems.reduce((sum, it) => sum + it.total, 0);
-      const discountAmount = parsed.data.discountAmount !== undefined ? parsed.data.discountAmount : booking.discountAmount;
-      const total = Math.max(0, subtotal - (discountAmount ?? 0));
+      const discountValue = data.discountAmount !== undefined ? data.discountAmount : (booking.discountAmount ?? 0);
+      const total = Math.max(0, subtotal - discountValue);
 
-      booking.items = computedItems as any;
+      booking.items = computedItems;
       booking.subtotal = subtotal;
       booking.total = total;
+      if (data.discountAmount !== undefined) {
+        booking.discountAmount = data.discountAmount;
+      }
     }
 
     // Handle date updates - need to check overlaps if dates change
-    if (parsed.data.startAt || parsed.data.endAt) {
-      const newStartAt = parsed.data.startAt || booking.startAt;
-      const newEndAt = parsed.data.endAt || booking.endAt;
+    if (data.startAt || data.endAt) {
+      const newStartAt = data.startAt || booking.startAt;
+      const newEndAt = data.endAt || booking.endAt;
       
       if (!(newStartAt instanceof Date) || !(newEndAt instanceof Date) || isNaN(+newStartAt) || isNaN(+newEndAt) || newStartAt >= newEndAt) {
         return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
       }
 
       // Check overlaps for non-overlap services
-      const nonOverlapServiceIds = booking.items.filter((it: any) => !it.allowOverlap).map((it: any) => String(it.serviceId));
+      const nonOverlapServiceIds = booking.items
+        .filter((item) => !item.allowOverlap)
+        .map((item) => item.serviceId);
       if (nonOverlapServiceIds.length > 0) {
         const conflicts = await Booking.find({
           _id: { $ne: booking._id },
@@ -155,58 +182,57 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // Handle discount update - need to recalculate total
-    if (parsed.data.discountAmount !== undefined && !parsed.data.items) {
+    if (data.discountAmount !== undefined && !data.items) {
       const subtotal = booking.subtotal;
-      const total = Math.max(0, subtotal - (parsed.data.discountAmount ?? 0));
-      booking.discountAmount = parsed.data.discountAmount;
+      const total = Math.max(0, subtotal - (data.discountAmount ?? 0));
+      booking.discountAmount = data.discountAmount;
       booking.total = total;
     }
 
     // Update only the provided fields and collect changes
-    const changes: { key: string; oldValue: any; newValue: any }[] = [];
+    const changes: IAuditChange[] = [];
     
     // Handle restore (deletedAt: null)
-    if (parsed.data.deletedAt === null) {
-      const oldDeletedAt = booking.deletedAt;
+    if (data.deletedAt === null && initialDeletedAt !== null) {
       booking.deletedAt = undefined;
-      changes.push({ key: 'deletedAt', oldValue: oldDeletedAt, newValue: null });
+      changes.push({ key: "deletedAt", oldValue: initialDeletedAt, newValue: null });
     }
-    const simpleFields: (keyof typeof parsed.data)[] = ['status', 'eventName', 'customerName', 'customerPhone', 'notes'];
-    simpleFields.forEach(key => {
-      const newVal = parsed.data[key];
-      if (newVal !== undefined) {
-        const oldVal = (booking as any)[key];
-        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-          changes.push({ key: key as string, oldValue: oldVal, newValue: newVal });
-        }
-        (booking as any)[key] = newVal;
+
+    const simpleFields: Array<"status" | "eventName" | "customerName" | "customerPhone" | "notes"> = [
+      "status",
+      "eventName",
+      "customerName",
+      "customerPhone",
+      "notes",
+    ];
+    simpleFields.forEach((key) => {
+      const newVal = data[key];
+      if (typeof newVal === "undefined") return;
+      const oldVal = booking[key];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        changes.push({ key, oldValue: oldVal, newValue: newVal });
       }
+      booking[key] = newVal as any;
     });
 
     // Track changes for complex fields
-    const oldSubtotal = booking.subtotal;
-    const oldTotal = booking.total;
-    const oldDiscountAmount = booking.discountAmount;
-    
-    if (parsed.data.items) {
-      changes.push({ key: 'items', oldValue: booking.items, newValue: parsed.data.items });
+    if (previousItemsSnapshot) {
+      changes.push({ key: "items", oldValue: previousItemsSnapshot, newValue: booking.items });
     }
-    if (parsed.data.startAt) {
-      changes.push({ key: 'startAt', oldValue: booking.startAt, newValue: parsed.data.startAt });
+    if (data.startAt && booking.startAt.getTime() !== initialStartAt.getTime()) {
+      changes.push({ key: "startAt", oldValue: initialStartAt, newValue: booking.startAt });
     }
-    if (parsed.data.endAt) {
-      changes.push({ key: 'endAt', oldValue: booking.endAt, newValue: parsed.data.endAt });
+    if (data.endAt && booking.endAt.getTime() !== initialEndAt.getTime()) {
+      changes.push({ key: "endAt", oldValue: initialEndAt, newValue: booking.endAt });
     }
-    if (parsed.data.discountAmount !== undefined && parsed.data.discountAmount !== oldDiscountAmount) {
-      changes.push({ key: 'discountAmount', oldValue: oldDiscountAmount, newValue: parsed.data.discountAmount });
+    if (data.discountAmount !== undefined && booking.discountAmount !== initialDiscountAmount) {
+      changes.push({ key: "discountAmount", oldValue: initialDiscountAmount, newValue: booking.discountAmount });
     }
-    if (parsed.data.items || parsed.data.discountAmount !== undefined) {
-      if (booking.subtotal !== oldSubtotal) {
-        changes.push({ key: 'subtotal', oldValue: oldSubtotal, newValue: booking.subtotal });
-      }
-      if (booking.total !== oldTotal) {
-        changes.push({ key: 'total', oldValue: oldTotal, newValue: booking.total });
-      }
+    if (booking.subtotal !== initialSubtotal) {
+      changes.push({ key: "subtotal", oldValue: initialSubtotal, newValue: booking.subtotal });
+    }
+    if (booking.total !== initialTotal) {
+      changes.push({ key: "total", oldValue: initialTotal, newValue: booking.total });
     }
 
     await booking.save();
@@ -215,12 +241,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (changes.length > 0) {
     try {
       // Build a concise note summarizing the updates
-      const formatVal = (v: any) => {
-        if (v === null || typeof v === "undefined") return "—";
-        if (v instanceof Date) return v.toISOString();
-        if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
-        // Fallback for objects/arrays
-        try { return JSON.stringify(v); } catch { return String(v); }
+      const formatVal = (value: unknown): string => {
+        if (value === null || typeof value === "undefined") return "—";
+        if (value instanceof Date) return value.toISOString();
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return String(value);
+        }
       };
       const note = changes
         .map(c => `${c.key}: ${formatVal(c.oldValue)} -> ${formatVal(c.newValue)}`)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { connectToDatabase } from "@/lib/db";
 import { PaymentLog } from "@/models/PaymentLog";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
@@ -12,7 +12,9 @@ const patchSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string; logId: string }> }) {
+type RouteContext = { params: Promise<{ id: string; logId: string }> };
+
+export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -29,13 +31,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    if (err?.name === "ZodError") return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  } catch (err) {
+    if (err instanceof ZodError) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    console.error("Failed to update payment log", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string; logId: string }> }) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -50,6 +53,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({ message: "Payment log deleted successfully" });
   } catch (err) {
+    console.error("Failed to delete payment log", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

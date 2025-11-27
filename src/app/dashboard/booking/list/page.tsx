@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { Calendar, Search, Filter, X, ChevronLeft, ChevronRight, Eye, Edit, Trash2, DollarSign, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -48,7 +49,7 @@ function formatDisplayDateTime(dateString: string): string {
 }
 
 // Quick date range presets - will be translated in component
-function getDatePresets(t: any) {
+function getDatePresets(t: ReturnType<typeof useTranslations>) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -92,7 +93,7 @@ export default function BookingListPage() {
   const [showDateFilter, setShowDateFilter] = useState<boolean>(false);
   const [stats, setStats] = useState({ totalRevenue: 0, totalBookings: 0, pendingCount: 0 });
 
-  const validateDates = (start: string, end: string): boolean => {
+  const validateDates = useCallback((start: string, end: string): boolean => {
     if (!start || !end) {
       setDateError(t("bothDatesRequired"));
       return false;
@@ -114,9 +115,9 @@ export default function BookingListPage() {
     }
     setDateError("");
     return true;
-  };
+  }, [t]);
 
-  const loadBookings = async (pageNum: number = page) => {
+  const loadBookings = useCallback(async (pageNum: number) => {
     if (!validateDates(startDate, endDate)) {
       return;
     }
@@ -148,7 +149,7 @@ export default function BookingListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateDates, startDate, endDate, search, statusFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     // Get user role
@@ -166,7 +167,7 @@ export default function BookingListPage() {
   useEffect(() => {
     setPage(1);
     loadBookings(1);
-  }, [search, statusFilter, sortBy, sortOrder, startDate, endDate]);
+  }, [search, statusFilter, sortBy, sortOrder, startDate, endDate, loadBookings]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,21 +271,21 @@ export default function BookingListPage() {
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {userRole === "admin" && (
-            <a
+            <Link
               href="/dashboard/booking/deleted"
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               {t("deleted")}
-            </a>
+            </Link>
           )}
-          <a
+          <Link
             href="/dashboard/booking/add"
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center gap-2 shadow-md"
           >
             <Calendar className="w-4 h-4" />
             {t("addBooking")}
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -531,22 +532,22 @@ export default function BookingListPage() {
                     </td>
                     <td className="px-3 py-3 md:px-4 md:py-4 align-top">
                       <div className="flex flex-wrap justify-end gap-1.5">
-                        <a 
-                          href={`/dashboard/booking/${b._id}`} 
+                        <Link
+                          href={`/dashboard/booking/${b._id}`}
                           className="px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                           title={tCommon("view")}
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">{tCommon("view")}</span>
-                        </a>
-                        <a 
-                          href={`/dashboard/booking/${b._id}/edit`} 
+                        </Link>
+                        <Link
+                          href={`/dashboard/booking/${b._id}/edit`}
                           className="px-2.5 py-1.5 text-xs border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-1"
                           title={tCommon("edit")}
                         >
                           <Edit className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">{tCommon("edit")}</span>
-                        </a>
+                        </Link>
                         {userRole === "admin" && (
                           <button
                             onClick={() => handleDelete(b._id, b.eventName)}
@@ -573,7 +574,7 @@ export default function BookingListPage() {
             </div>
             <div className="flex gap-2 self-end md:self-auto">
               <button
-                onClick={() => { setPage(p => Math.max(1, p - 1)); loadBookings(Math.max(1, page - 1)); }}
+                onClick={() => { const nextPage = Math.max(1, page - 1); setPage(nextPage); loadBookings(nextPage); }}
                 disabled={page === 1}
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors flex items-center gap-1"
               >
@@ -581,7 +582,7 @@ export default function BookingListPage() {
                 {t("previous")}
               </button>
               <button
-                onClick={() => { setPage(p => p + 1); loadBookings(page + 1); }}
+                onClick={() => { const nextPage = page + 1; setPage(nextPage); loadBookings(nextPage); }}
                 disabled={page * 10 >= total}
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors flex items-center gap-1"
               >

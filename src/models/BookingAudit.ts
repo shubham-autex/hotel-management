@@ -2,8 +2,8 @@ import mongoose, { Schema, Document, Model, models } from "mongoose";
 
 export interface IAuditChange {
   key: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
 }
 
 export interface IBookingAudit extends Document {

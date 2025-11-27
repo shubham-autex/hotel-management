@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { BookingAudit } from "@/models/BookingAudit";
+import { BookingAudit, type IBookingAudit } from "@/models/BookingAudit";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -12,9 +14,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const id = (await params).id;
-    const logs = await BookingAudit.find({ bookingId: id }).sort({ createdAt: -1 }).lean();
+    const logs = await BookingAudit.find({ bookingId: id }).sort({ createdAt: -1 }).lean<IBookingAudit[]>();
     return NextResponse.json({ items: logs });
   } catch (err) {
+    console.error("Failed to fetch booking audits", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

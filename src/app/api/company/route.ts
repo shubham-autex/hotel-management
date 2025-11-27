@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     const doc = await CompanyProfile.findOne().lean();
     return NextResponse.json(doc || {});
   } catch (err) {
+    console.error("Failed to fetch company profile", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -48,6 +49,7 @@ export async function PUT(req: NextRequest) {
     const doc = await CompanyProfile.findOneAndUpdate({}, update, { upsert: true, new: true, setDefaultsOnInsert: true });
     return NextResponse.json({ ok: true, id: String(doc._id) });
   } catch (err) {
+    console.error("Failed to update company profile", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

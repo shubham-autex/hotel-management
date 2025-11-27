@@ -117,7 +117,7 @@ export default function EditStockClient({ stock }: { stock: Stock }) {
               step="0.01"
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
-            <p className="mt-1 text-xs text-gray-500">You'll be notified when stock falls below this level</p>
+            <p className="mt-1 text-xs text-gray-500">{`You'll be notified when stock falls below this level`}</p>
           </div>
         </div>
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
+import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Employee, DEPARTMENTS, ID_PROOF_TYPES, generateNextEmployeeCode } from "@/models/Employee";
+import { Employee, DEPARTMENTS, ID_PROOF_TYPES, generateNextEmployeeCode, type IEmployee } from "@/models/Employee";
 import bcrypt from "bcryptjs";
 import { User } from "@/models/User";
 import crypto from "crypto";
@@ -16,14 +17,14 @@ const bankSchema = z.object({
 
 const bodySchema = z.object({
   name: z.string().min(1),
-  department: z.enum(DEPARTMENTS as unknown as ["Cleaning","Management","Electicity"]),
+  department: z.enum(DEPARTMENTS),
   age: z.number().int().min(14).max(100).optional(),
   gender: z.enum(["Male", "Female", "Other"]).optional(),
   isActive: z.boolean().optional(),
   phoneNumber: z.string().optional(),
   address: z.string().optional(),
   pincode: z.string().optional(),
-  idProofType: z.enum(ID_PROOF_TYPES as unknown as ["Aadhar","PAN","Rasgan Card","Voter Id"]).optional(),
+  idProofType: z.enum(ID_PROOF_TYPES).optional(),
   idProofNumber: z.string().optional(),
   idProofPhotos: z.array(z.string()).min(2).optional(),
   dateOfJoining: z.coerce.date().optional(),
@@ -73,10 +74,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ id: created.id, employeeCode, managerCredentials });
-  } catch (err: any) {
-    if (err?.name === "ZodError") {
+  } catch (err) {
+    if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+    console.error("Failed to create employee", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -90,8 +92,8 @@ export async function GET(req: NextRequest) {
     const department = searchParams.get("department") || undefined;
     const q = searchParams.get("q") || undefined;
 
-    const filter: any = {};
-    if (department) filter.department = department;
+    const filter: FilterQuery<IEmployee> = {};
+    if (department) filter.department = department as IEmployee["department"];
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
@@ -112,6 +114,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ items, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) {
+    console.error("Failed to fetch employees", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

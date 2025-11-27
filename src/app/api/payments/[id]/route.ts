@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { connectToDatabase } from "@/lib/db";
-import { Payment } from "@/models/Payment";
+import { Payment, type IPayment } from "@/models/Payment";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const patchSchema = z.object({
@@ -16,25 +16,28 @@ const patchSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
-    const token = _req.cookies.get(AUTH_COOKIE)?.value;
+    const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
-    const payment = await Payment.findById(id).lean();
+    const payment = await Payment.findById(id).lean<IPayment | null>();
     if (!payment) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(payment);
   } catch (err) {
+    console.error("Failed to fetch payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -49,7 +52,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     // Validate recurring payments have frequency
     if (data.type === "recurring" && !data.frequency) {
-      const existing = await Payment.findById(id);
+      const existing = await Payment.findById(id).lean<IPayment | null>();
       if (!existing || existing.type !== "recurring") {
         return NextResponse.json({ error: "Frequency is required for recurring payments" }, { status: 400 });
       }
@@ -59,13 +62,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    if (err?.name === "ZodError") return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  } catch (err) {
+    if (err instanceof ZodError) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    console.error("Failed to update payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -86,6 +90,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({ message: "Payment deleted successfully" });
   } catch (err) {
+    console.error("Failed to delete payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

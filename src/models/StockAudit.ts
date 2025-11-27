@@ -5,13 +5,13 @@ export interface IStockAudit extends Document {
   action: "created" | "updated" | "deleted";
   changes: Array<{
     key: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: unknown;
+    newValue: unknown;
   }>;
   user?: {
     id: string;
     email: string;
-    role: string;
+    role?: string;
   };
   note?: string;
   createdAt: Date;

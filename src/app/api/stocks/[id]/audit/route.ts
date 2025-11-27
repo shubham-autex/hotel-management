@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { StockAudit } from "@/models/StockAudit";
+import { StockAudit, type IStockAudit } from "@/models/StockAudit";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -18,10 +20,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const audits = await StockAudit.find({ stockId: id })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .lean();
+      .lean<IStockAudit[]>();
 
     return NextResponse.json({ items: audits });
   } catch (err) {
+    console.error("Failed to fetch stock audits", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
+import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Payment } from "@/models/Payment";
+import { Payment, type IPayment } from "@/models/Payment";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const bodySchema = z.object({
@@ -44,10 +45,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ id: created.id }, { status: 201 });
-  } catch (err: any) {
-    if (err?.name === "ZodError") {
+  } catch (err) {
+    if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+    console.error("Failed to create payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -69,7 +71,7 @@ export async function GET(req: NextRequest) {
     const direction = url.searchParams.get("direction") || "";
     const isActive = url.searchParams.get("isActive");
 
-    const filter: any = {};
+    const filter: FilterQuery<IPayment> = {};
 
     if (q) {
       filter.$or = [
@@ -92,7 +94,7 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      Payment.find(filter).skip(skip).limit(limit).sort({ startDate: -1 }).lean(),
+      Payment.find(filter).skip(skip).limit(limit).sort({ startDate: -1 }).lean<IPayment[]>(),
       Payment.countDocuments(filter),
     ]);
 
@@ -104,6 +106,7 @@ export async function GET(req: NextRequest) {
       pages: Math.ceil(total / limit),
     });
   } catch (err) {
+    console.error("Failed to fetch payments", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

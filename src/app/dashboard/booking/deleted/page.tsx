@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { Trash2, RotateCcw } from "lucide-react";
 
 type Booking = {
@@ -38,7 +39,7 @@ export default function DeletedBookingsPage() {
     })();
   }, []);
 
-  const loadBookings = async (pageNum: number = page) => {
+  const loadBookings = useCallback(async (pageNum: number) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -56,13 +57,13 @@ export default function DeletedBookingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (userRole === "admin") {
-      loadBookings(1);
+      loadBookings(page);
     }
-  }, [userRole]);
+  }, [userRole, page, loadBookings]);
 
   const handleRestore = async (bookingId: string, eventName: string) => {
     if (!confirm(`Restore booking "${eventName}"?`)) return;
@@ -100,12 +101,12 @@ export default function DeletedBookingsPage() {
           <h2 className="text-2xl font-bold text-gray-900">Deleted Bookings</h2>
           <p className="text-gray-500">View and restore deleted bookings</p>
         </div>
-        <a
+        <Link
           href="/dashboard/booking/list"
           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 self-start sm:self-auto"
         >
           Back to Bookings
-        </a>
+        </Link>
       </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 p-6 shadow-sm">
@@ -166,14 +167,14 @@ export default function DeletedBookingsPage() {
                 </div>
                 <div className="flex gap-2 self-end md:self-auto">
                   <button
-                    onClick={() => { setPage(p => Math.max(1, p - 1)); loadBookings(Math.max(1, page - 1)); }}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Previous
                   </button>
                   <button
-                    onClick={() => { setPage(p => p + 1); loadBookings(page + 1); }}
+                    onClick={() => setPage((p) => p + 1)}
                     disabled={page * 10 >= total}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >

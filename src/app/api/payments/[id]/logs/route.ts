@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { connectToDatabase } from "@/lib/db";
-import { PaymentLog } from "@/models/PaymentLog";
+import { PaymentLog, type IPaymentLog } from "@/models/PaymentLog";
 import { Payment } from "@/models/Payment";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
@@ -13,7 +13,9 @@ const logSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function POST(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -36,13 +38,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     });
 
     return NextResponse.json({ id: log.id }, { status: 201 });
-  } catch (err: any) {
-    if (err?.name === "ZodError") return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  } catch (err) {
+    if (err instanceof ZodError) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    console.error("Failed to create payment log", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -54,10 +57,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const { id } = await context.params;
     const logs = await PaymentLog.find({ paymentId: id })
       .sort({ date: -1 })
-      .lean();
+      .lean<IPaymentLog[]>();
 
     return NextResponse.json({ items: logs });
   } catch (err) {
+    console.error("Failed to fetch payment logs", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

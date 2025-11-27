@@ -63,6 +63,7 @@ export async function POST(req: NextRequest, context: { params?: Promise<{ id?: 
 
     return NextResponse.json({ id: payment.id }, { status: 201 });
   } catch (err) {
+    console.error("Failed to create booking payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -80,6 +81,7 @@ export async function GET(req: NextRequest, context: { params?: Promise<{ id?: s
     const payments = await Payment.find({ bookingId }).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ items: payments });
   } catch (err) {
+    console.error("Failed to fetch booking payments", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

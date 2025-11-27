@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
       if (!payload) {
         return NextResponse.redirect(new URL("/login", req.url));
       }
-    } catch (error) {
+    } catch (error: any) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }

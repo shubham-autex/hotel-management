@@ -47,7 +47,11 @@ export default function ServiceForm() {
     }));
   };
 
-  const updateVariant = (index: number, field: keyof ServiceVariant, value: any) => {
+  const updateVariant = <K extends keyof ServiceVariant>(
+    index: number,
+    field: K,
+    value: ServiceVariant[K],
+  ) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((v, i) => i === index ? { ...v, [field]: value } : v)
@@ -76,7 +80,12 @@ export default function ServiceForm() {
     }));
   };
 
-  const updatePricingElement = (variantIndex: number, elementIndex: number, field: keyof PricingElement, value: any) => {
+  const updatePricingElement = <K extends keyof PricingElement>(
+    variantIndex: number,
+    elementIndex: number,
+    field: K,
+    value: PricingElement[K],
+  ) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((v, i) => 
@@ -119,8 +128,9 @@ export default function ServiceForm() {
       });
       
       alert("Service created successfully!");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create service";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -211,6 +221,13 @@ export default function ServiceForm() {
                     <label className="block text-sm font-medium text-gray-700">
                       Pricing Elements
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => addPricingElement(variantIndex)}
+                      className="text-sm text-purple-600 hover:text-purple-800"
+                    >
+                      Add Price
+                    </button>
                   </div>
                 </div>
               </div>

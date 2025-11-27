@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { connectToDatabase } from "@/lib/db";
-import { Stock } from "@/models/Stock";
+import { Stock, type IStock } from "@/models/Stock";
 import { StockAudit } from "@/models/StockAudit";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
@@ -12,20 +12,25 @@ const patchSchema = z.object({
   description: z.string().optional(),
   minThreshold: z.number().min(0).optional(),
 });
+type PatchPayload = z.infer<typeof patchSchema>;
+type AuditChange = { key: string; oldValue: unknown; newValue: unknown };
 
-export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
     const { id } = await context.params;
-    const stock = await Stock.findById(id).lean();
+    const stock = await Stock.findById(id).lean<IStock | null>();
     if (!stock) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(stock);
   } catch (err) {
+    console.error("Failed to fetch stock", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -36,24 +41,22 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     const { id } = await context.params;
     const json = await req.json();
-    const data = patchSchema.parse(json);
+    const data: PatchPayload = patchSchema.parse(json);
 
     const stock = await Stock.findById(id);
     if (!stock) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const oldStock = stock.toObject();
-    const changes: { key: string; oldValue: any; newValue: any }[] = [];
+    const changes: AuditChange[] = [];
+    const mutableStock = stock as any;
 
     // Track changes
-    Object.keys(data).forEach((key) => {
-      const typedKey = key as keyof typeof data;
-      const newVal = data[typedKey];
-      if (newVal !== undefined) {
-        const oldVal = (oldStock as any)[typedKey];
-        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-          changes.push({ key: typedKey, oldValue: oldVal, newValue: newVal });
-          (stock as any)[typedKey] = newVal;
-        }
+    Object.entries(data).forEach(([key, newVal]) => {
+      if (typeof newVal === "undefined") return;
+      const oldVal = (oldStock as any)[key];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        changes.push({ key, oldValue: oldVal ?? null, newValue: newVal });
+        mutableStock[key] = newVal as never;
       }
     });
 
@@ -62,7 +65,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     // Write audit log if there were changes
     if (changes.length > 0) {
       try {
-        const formatVal = (v: any) => {
+        const formatVal = (v: unknown) => {
           if (v === null || typeof v === "undefined") return "—";
           if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
           try {
@@ -86,13 +89,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    if (err?.name === "ZodError") return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  } catch (err) {
+    if (err instanceof ZodError) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    console.error("Failed to update stock", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase();
 
@@ -122,6 +126,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({ message: "Stock deleted successfully" });
   } catch (err) {
+    console.error("Failed to delete stock", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

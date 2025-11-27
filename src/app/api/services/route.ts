@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
+import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Service } from "@/models/Service";
-import { PRICE_TYPES } from "@/lib/constants/service";
+import { Service, type IService } from "@/models/Service";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const pricingElementSchema = z.discriminatedUnion("type", [
@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ id: created.id });
-  } catch (err: any) {
-    if (err?.name === "ZodError") {
+  } catch (err) {
+    if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+    console.error("Failed to create service", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
 
     const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
     
-    const filter: any = {};
+    const filter: FilterQuery<IService> = {};
     // Filter out deleted items unless admin explicitly requests them
     if (!showDeleted) {
       filter.deletedAt = null;
@@ -87,13 +88,13 @@ export async function GET(req: NextRequest) {
         { description: { $regex: q, $options: "i" } },
       ];
     }
-    if (isActive !== null) {
+    if (isActive !== null && isActive !== "") {
       filter.isActive = isActive === "true";
     }
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      Service.find(filter).skip(skip).limit(limit).lean(),
+      Service.find(filter).skip(skip).limit(limit).lean<IService[]>(),
       Service.countDocuments(filter),
     ]);
 
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       pages: Math.ceil(total / limit),
     });
   } catch (err) {
+    console.error("Failed to fetch services", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

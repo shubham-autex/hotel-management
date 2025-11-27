@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import type { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { Service } from "@/models/Service";
-import { Booking } from "@/models/Booking";
+import { Service, type IService } from "@/models/Service";
+import { Booking, type IBooking, type IBookingItem } from "@/models/Booking";
 
 const querySchema = z.object({
   startAt: z.string().transform((s) => new Date(s)),
@@ -38,11 +39,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     }
 
-    const serviceFilter: any = { isActive: true, deletedAt: null };
+    const serviceFilter: FilterQuery<IService> = { isActive: true, deletedAt: null };
     if (q) serviceFilter.name = { $regex: q, $options: "i" };
 
+    type LeanBookingRange = Pick<IBooking, "startAt" | "endAt" | "items">;
+
     const [services, overlappingBookings] = await Promise.all([
-      Service.find(serviceFilter).lean(),
+      Service.find(serviceFilter).lean<IService[]>(),
       Booking.find({
         $or: [
           { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
@@ -51,11 +54,11 @@ export async function GET(req: NextRequest) {
         deletedAt: null,
       })
         .select({ items: 1, startAt: 1, endAt: 1 })
-        .lean(),
+        .lean<LeanBookingRange[]>(),
     ]);
 
-    const nonOverlapServices: any[] = [];
-    const overlapAllowedServices: any[] = [];
+    const nonOverlapServices: IService[] = [];
+    const overlapAllowedServices: IService[] = [];
 
     for (const svc of services) {
       if (svc.allowOverlap) {
@@ -65,7 +68,7 @@ export async function GET(req: NextRequest) {
       // For services where overlap is not allowed, check if any booking within range includes this service
       const hasConflict = overlappingBookings.some((b) => {
         if (!rangesOverlap(startAt, endAt, b.startAt, b.endAt)) return false;
-        return b.items?.some((it: any) => String(it.serviceId) === String(svc._id));
+        return b.items?.some((it: IBookingItem) => String(it.serviceId) === String(svc._id));
       });
       if (!hasConflict) nonOverlapServices.push(svc);
     }
@@ -75,6 +78,7 @@ export async function GET(req: NextRequest) {
       overlapAllowedServices,
     });
   } catch (err) {
+    console.error("Failed to fetch availability", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

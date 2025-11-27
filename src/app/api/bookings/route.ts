@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { FilterQuery, Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { Booking } from "@/models/Booking";
-import { Service } from "@/models/Service";
+import { Booking, type IBooking, type IBookingItem } from "@/models/Booking";
+import { Service, type IService } from "@/models/Service";
 import { BookingAudit } from "@/models/BookingAudit";
 
 const bookingItemSchema = z.object({
@@ -62,12 +63,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Load services referenced, to verify allowOverlap and names (exclude deleted)
-    const serviceIds = items.map((i) => i.serviceId);
-    const services = await Service.find({ _id: { $in: serviceIds }, deletedAt: null }).lean();
+    const serviceObjectIds = items.map((i) => new Types.ObjectId(i.serviceId));
+    const services = await Service.find({ _id: { $in: serviceObjectIds }, deletedAt: null }).lean<IService[]>();
     const serviceById = new Map(services.map((s) => [String(s._id), s]));
 
     // Overlap check for any service where allowOverlap = false
-    const nonOverlapServiceIds = services.filter((s: any) => !s.allowOverlap && !s.deletedAt).map((s: any) => String(s._id));
+    const nonOverlapServiceIds = services
+      .filter((s) => !s.allowOverlap && !s.deletedAt)
+      .map((s) => s._id);
     if (nonOverlapServiceIds.length > 0) {
       const conflicts = await Booking.find({
         $or: [
@@ -81,11 +84,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const computedItems = items.map((it) => {
+    const computedItems: IBookingItem[] = items.map((it) => {
       const svc = serviceById.get(it.serviceId);
       const total = calculateItemTotal(it);
       return {
-        serviceId: it.serviceId,
+        serviceId: new Types.ObjectId(it.serviceId),
         serviceName: svc?.name ?? "Unknown",
         allowOverlap: !!svc?.allowOverlap,
         variantName: it.variantName,
@@ -116,7 +119,22 @@ export async function POST(req: NextRequest) {
     }));
 
     // Build create document; only include status if provided so schema default applies
-    const createDoc: any = {
+    type CreateBookingInput = Pick<
+      IBooking,
+      | "customerName"
+      | "customerPhone"
+      | "eventName"
+      | "startAt"
+      | "endAt"
+      | "items"
+      | "subtotal"
+      | "discountAmount"
+      | "total"
+      | "notes"
+      | "status"
+    >;
+
+    const createDoc: CreateBookingInput = {
       customerName,
       customerPhone,
       eventName,
@@ -127,10 +145,8 @@ export async function POST(req: NextRequest) {
       discountAmount,
       total,
       notes,
+      status: status ?? "pending",
     };
-    if (typeof status !== "undefined") {
-      createDoc.status = status;
-    }
 
     const created = await Booking.create(createDoc);
 
@@ -182,8 +198,8 @@ export async function GET(req: NextRequest) {
     const startDateParam = url.searchParams.get("startDate");
     const endDateParam = url.searchParams.get("endDate");
     
-    const filter: any = {};
-    const andConditions: any[] = [];
+    const filter: FilterQuery<IBooking> = {};
+    const andConditions: FilterQuery<IBooking>[] = [];
     
     // Filter out deleted items unless admin explicitly requests them
     if (!showDeleted) {
@@ -227,7 +243,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build sort object
-    const sortObj: any = {};
+    const sortObj: Record<string, 1 | -1> = {};
     const sortDirection = sortOrder === "asc" ? 1 : -1;
     sortObj[sortBy] = sortDirection;
 
@@ -297,6 +313,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ items, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) {
+    console.error("Failed to fetch bookings", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
