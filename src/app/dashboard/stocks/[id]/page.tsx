@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Stock } from "@/models/Stock";
-import { StockAudit } from "@/models/StockAudit";
+import { findStockById, listStockAudits } from "@/db/stocks";
 import { Package, History, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -19,18 +17,14 @@ export default async function StockDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const stock = await Stock.findById(id).lean();
+  const stock = await findStockById(id);
   
   if (!stock) {
     return <div className="p-4">Stock item not found</div>;
   }
 
-  const audits = await StockAudit.find({ stockId: id })
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .lean();
+  const audits = await listStockAudits(id, 20);
 
   const isLowStock = (stock.quantity <= 0) || (stock.minThreshold && stock.quantity <= stock.minThreshold);
 

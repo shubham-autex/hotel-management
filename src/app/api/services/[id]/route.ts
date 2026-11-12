@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { connectToDatabase } from "@/lib/db";
-import { Service, type IService, type IServiceVariant } from "@/models/Service";
+import { findServiceById, softDeleteService, updateService } from "@/db/services";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-// GET /api/services/[id] – fetch a single service
 export async function GET(_req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
     const { id } = await context.params;
-    const svc = await Service.findById(id).lean<IService | null>();
+    const svc = await findServiceById(id);
     if (!svc) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ item: svc });
   } catch (err) {
@@ -20,7 +17,6 @@ export async function GET(_req: NextRequest, context: RouteContext) {
   }
 }
 
-// PATCH /api/services/[id] – update a service (admin only)
 const priceTypeSchema = z.enum(["per_unit", "fixed", "custom", "per_hour"]);
 const pricingElementSchema = z.object({
   type: priceTypeSchema,
@@ -41,7 +37,6 @@ const bodySchema = z.object({
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,18 +46,14 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const json = await req.json();
     const data = bodySchema.parse(json);
 
-    // Handle restore (deletedAt: null)
-    const updateData: Partial<any> = {
-      ...data,
-    };
-    if (data.variants) {
-      updateData.variants = data.variants as IServiceVariant[];
-    }
-    if (data.deletedAt === null) {
-      updateData.deletedAt = undefined;
-    }
-
-    const updated = await Service.findByIdAndUpdate(id, updateData, { new: true });
+    const updated = await updateService(id, {
+      name: data.name,
+      description: data.description,
+      variants: data.variants,
+      isActive: data.isActive,
+      allowOverlap: data.allowOverlap,
+      deletedAt: data.deletedAt === null ? null : undefined,
+    });
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -74,19 +65,14 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
-    const service = await Service.findById(id);
+    const service = await softDeleteService(id);
     if (!service) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    // Soft delete
-    service.deletedAt = new Date();
-    await service.save();
 
     return NextResponse.json({ message: "Service deleted successfully" });
   } catch (err) {
@@ -94,5 +80,3 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-

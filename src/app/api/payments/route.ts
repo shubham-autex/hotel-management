@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { FilterQuery } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
-import { Payment, type IPayment } from "@/models/Payment";
+import { createPayment, listPayments } from "@/db/payments";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const bodySchema = z.object({
@@ -19,8 +17,6 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,22 +25,19 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const data = bodySchema.parse(json);
 
-    // Validate recurring payments have frequency
     if (data.type === "recurring" && !data.frequency) {
       return NextResponse.json({ error: "Frequency is required for recurring payments" }, { status: 400 });
     }
-
-    // Validate one-time payments don't have frequency
     if (data.type === "one_time" && data.frequency) {
       return NextResponse.json({ error: "Frequency should not be set for one-time payments" }, { status: 400 });
     }
 
-    const created = await Payment.create({
+    const created = await createPayment({
       ...data,
       isActive: data.isActive ?? true,
     });
 
-    return NextResponse.json({ id: created.id }, { status: 201 });
+    return NextResponse.json({ id: created._id }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -56,8 +49,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -71,32 +62,14 @@ export async function GET(req: NextRequest) {
     const direction = url.searchParams.get("direction") || "";
     const isActive = url.searchParams.get("isActive");
 
-    const filter: FilterQuery<IPayment> = {};
-
-    if (q) {
-      filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-      ];
-    }
-
-    if (type) {
-      filter.type = type;
-    }
-
-    if (direction) {
-      filter.direction = direction;
-    }
-
-    if (isActive !== null && isActive !== "") {
-      filter.isActive = isActive === "true";
-    }
-
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      Payment.find(filter).skip(skip).limit(limit).sort({ startDate: -1 }).lean<IPayment[]>(),
-      Payment.countDocuments(filter),
-    ]);
+    const { items, total } = await listPayments({
+      page,
+      limit,
+      q: q || undefined,
+      type: type || undefined,
+      direction: direction || undefined,
+      isActive: isActive === null || isActive === "" ? undefined : isActive === "true",
+    });
 
     return NextResponse.json({
       items,
@@ -110,4 +83,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

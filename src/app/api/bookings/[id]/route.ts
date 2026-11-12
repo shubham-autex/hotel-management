@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { FilterQuery, Types } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
+import { countBookingConflicts, createBookingAudit, findBookingById, updateBooking } from "@/db/bookings";
+import { findActiveServicesByIds } from "@/db/services";
+import { isUuid } from "@/db/helpers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { Booking, type IBooking, type IBookingItem } from "@/models/Booking";
-import { BookingAudit, type IAuditChange } from "@/models/BookingAudit";
-import { Service, type IService } from "@/models/Service";
+import type { AuditChange, BookingItem } from "@/db/types";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
     const id = (await params).id;
-
-    const booking = await Booking.findById(id).lean();
+    const booking = await findBookingById(id);
     if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(booking);
   } catch (err) {
@@ -41,7 +38,6 @@ function calculateItemTotal(item: z.infer<typeof bookingItemSchema>): number {
     const price = (item.unitPrice ?? 0) * (item.units ?? 0);
     return Math.max(0, price - discount);
   }
-  // custom
   return Math.max(0, (item.customPrice ?? 0) - discount);
 }
 
@@ -62,8 +58,6 @@ type PatchPayload = z.infer<typeof patchSchema>;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     const data: PatchPayload = parsed.data;
 
-    const booking = await Booking.findById(id);
+    const booking = await findBookingById(id);
     if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const initialStartAt = booking.startAt;
@@ -83,49 +77,44 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const initialTotal = booking.total;
     const initialDiscountAmount = booking.discountAmount ?? 0;
     const initialDeletedAt = booking.deletedAt ?? null;
-    let previousItemsSnapshot: IBookingItem[] | null = null;
+    let previousItemsSnapshot: BookingItem[] | null = null;
 
-    // Handle items update - need to recalculate totals
+    const next = {
+      ...booking,
+      items: booking.items.map((item) => ({ ...item })),
+      discountAmount: booking.discountAmount ?? 0,
+    };
+
     if (data.items) {
-      const serviceObjectIds = data.items.map((item) => new Types.ObjectId(item.serviceId));
-      const services = await Service.find({ _id: { $in: serviceObjectIds }, deletedAt: null }).lean<IService[]>();
-      if (services.length !== serviceObjectIds.length) {
+      if (data.items.some((item) => !isUuid(item.serviceId))) {
+        return NextResponse.json({ error: "Invalid service id" }, { status: 400 });
+      }
+      const services = await findActiveServicesByIds(data.items.map((item) => item.serviceId));
+      const uniqueIds = [...new Set(data.items.map((item) => item.serviceId))];
+      if (services.length !== uniqueIds.length) {
         return NextResponse.json({ error: "One or more services not found or deleted" }, { status: 404 });
       }
-      const serviceById = new Map(services.map((s: any) => [s._id.toString(), s]));
-
-      // Overlap check for any service where allowOverlap = false
-      const nonOverlapServiceIds = services.filter((s) => !s.allowOverlap && !s.deletedAt).map((s) => s._id);
+      const serviceById = new Map(services.map((service) => [service._id, service]));
+      const nonOverlapServiceIds = services.filter((service) => !service.allowOverlap).map((service) => service._id);
       if (nonOverlapServiceIds.length > 0) {
         const startAt = data.startAt ?? booking.startAt;
         const endAt = data.endAt ?? booking.endAt;
-        const conflictFilter: FilterQuery<IBooking> = {
-          _id: { $ne: booking._id }, // Exclude current booking
-          $or: [
-            { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
-          ],
-          "items.serviceId": { $in: nonOverlapServiceIds },
-          deletedAt: null,
-        };
-        const conflicts = await Booking.find(conflictFilter).countDocuments();
+        const conflicts = await countBookingConflicts({
+          startAt,
+          endAt,
+          serviceIds: nonOverlapServiceIds,
+          excludeId: booking._id,
+        });
         if (conflicts > 0) {
           return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
         }
       }
 
-      previousItemsSnapshot = booking.items.map<IBookingItem>((item) => {
-        const docLike = item as unknown as { toObject?: () => IBookingItem };
-        if (typeof docLike.toObject === "function") {
-          return docLike.toObject();
-        }
-        return { ...item } as IBookingItem;
-      });
-
-      const computedItems: IBookingItem[] = data.items.map((item) => {
+      previousItemsSnapshot = booking.items.map((item) => ({ ...item }));
+      next.items = data.items.map((item) => {
         const svc = serviceById.get(item.serviceId);
-        const total = calculateItemTotal(item);
         return {
-          serviceId: new Types.ObjectId(item.serviceId),
+          serviceId: item.serviceId,
           serviceName: svc?.name ?? "Unknown",
           allowOverlap: !!svc?.allowOverlap,
           variantName: item.variantName,
@@ -134,136 +123,119 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           units: item.units,
           customPrice: item.customPrice,
           discountAmount: item.discountAmount ?? 0,
-          total,
+          total: calculateItemTotal(item),
         };
       });
-
-      const subtotal = computedItems.reduce((sum, it) => sum + it.total, 0);
+      next.subtotal = next.items.reduce((sum, item) => sum + item.total, 0);
       const discountValue = data.discountAmount !== undefined ? data.discountAmount : (booking.discountAmount ?? 0);
-      const total = Math.max(0, subtotal - discountValue);
-
-      booking.items = computedItems;
-      booking.subtotal = subtotal;
-      booking.total = total;
-      if (data.discountAmount !== undefined) {
-        booking.discountAmount = data.discountAmount;
-      }
+      next.total = Math.max(0, next.subtotal - discountValue);
+      if (data.discountAmount !== undefined) next.discountAmount = data.discountAmount;
     }
 
-    // Handle date updates - need to check overlaps if dates change
     if (data.startAt || data.endAt) {
-      const newStartAt = data.startAt || booking.startAt;
-      const newEndAt = data.endAt || booking.endAt;
-      
+      const newStartAt = data.startAt || next.startAt;
+      const newEndAt = data.endAt || next.endAt;
       if (!(newStartAt instanceof Date) || !(newEndAt instanceof Date) || isNaN(+newStartAt) || isNaN(+newEndAt) || newStartAt >= newEndAt) {
         return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
       }
 
-      // Check overlaps for non-overlap services
-      const nonOverlapServiceIds = booking.items
-        .filter((item) => !item.allowOverlap)
-        .map((item) => item.serviceId);
+      const nonOverlapServiceIds = next.items.filter((item) => !item.allowOverlap).map((item) => item.serviceId);
       if (nonOverlapServiceIds.length > 0) {
-        const conflicts = await Booking.find({
-          _id: { $ne: booking._id },
-          $or: [
-            { startAt: { $lt: newEndAt }, endAt: { $gt: newStartAt } },
-          ],
-          "items.serviceId": { $in: nonOverlapServiceIds },
-          deletedAt: null,
-        }).countDocuments();
+        const conflicts = await countBookingConflicts({
+          startAt: newStartAt,
+          endAt: newEndAt,
+          serviceIds: nonOverlapServiceIds,
+          excludeId: booking._id,
+        });
         if (conflicts > 0) {
           return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
         }
       }
 
-      booking.startAt = newStartAt;
-      booking.endAt = newEndAt;
+      next.startAt = newStartAt;
+      next.endAt = newEndAt;
     }
 
-    // Handle discount update - need to recalculate total
     if (data.discountAmount !== undefined && !data.items) {
-      const subtotal = booking.subtotal;
-      const total = Math.max(0, subtotal - (data.discountAmount ?? 0));
-      booking.discountAmount = data.discountAmount;
-      booking.total = total;
+      next.discountAmount = data.discountAmount;
+      next.total = Math.max(0, next.subtotal - (data.discountAmount ?? 0));
     }
 
-    // Update only the provided fields and collect changes
-    const changes: IAuditChange[] = [];
-    
-    // Handle restore (deletedAt: null)
+    const changes: AuditChange[] = [];
     if (data.deletedAt === null && initialDeletedAt !== null) {
-      booking.deletedAt = undefined;
+      next.deletedAt = null;
       changes.push({ key: "deletedAt", oldValue: initialDeletedAt, newValue: null });
     }
 
-    const simpleFields: Array<"status" | "eventName" | "customerName" | "customerPhone" | "notes"> = [
-      "status",
-      "eventName",
-      "customerName",
-      "customerPhone",
-      "notes",
-    ];
+    const simpleFields = ["status", "eventName", "customerName", "customerPhone", "notes"] as const;
     simpleFields.forEach((key) => {
       const newVal = data[key];
       if (typeof newVal === "undefined") return;
-      const oldVal = booking[key];
+      const oldVal = next[key];
       if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
         changes.push({ key, oldValue: oldVal, newValue: newVal });
       }
-      booking[key] = newVal as any;
+      next[key] = newVal;
     });
 
-    // Track changes for complex fields
     if (previousItemsSnapshot) {
-      changes.push({ key: "items", oldValue: previousItemsSnapshot, newValue: booking.items });
+      changes.push({ key: "items", oldValue: previousItemsSnapshot, newValue: next.items });
     }
-    if (data.startAt && booking.startAt.getTime() !== initialStartAt.getTime()) {
-      changes.push({ key: "startAt", oldValue: initialStartAt, newValue: booking.startAt });
+    if (data.startAt && next.startAt.getTime() !== initialStartAt.getTime()) {
+      changes.push({ key: "startAt", oldValue: initialStartAt, newValue: next.startAt });
     }
-    if (data.endAt && booking.endAt.getTime() !== initialEndAt.getTime()) {
-      changes.push({ key: "endAt", oldValue: initialEndAt, newValue: booking.endAt });
+    if (data.endAt && next.endAt.getTime() !== initialEndAt.getTime()) {
+      changes.push({ key: "endAt", oldValue: initialEndAt, newValue: next.endAt });
     }
-    if (data.discountAmount !== undefined && booking.discountAmount !== initialDiscountAmount) {
-      changes.push({ key: "discountAmount", oldValue: initialDiscountAmount, newValue: booking.discountAmount });
+    if (data.discountAmount !== undefined && next.discountAmount !== initialDiscountAmount) {
+      changes.push({ key: "discountAmount", oldValue: initialDiscountAmount, newValue: next.discountAmount });
     }
-    if (booking.subtotal !== initialSubtotal) {
-      changes.push({ key: "subtotal", oldValue: initialSubtotal, newValue: booking.subtotal });
+    if (next.subtotal !== initialSubtotal) {
+      changes.push({ key: "subtotal", oldValue: initialSubtotal, newValue: next.subtotal });
     }
-    if (booking.total !== initialTotal) {
-      changes.push({ key: "total", oldValue: initialTotal, newValue: booking.total });
+    if (next.total !== initialTotal) {
+      changes.push({ key: "total", oldValue: initialTotal, newValue: next.total });
     }
 
-    await booking.save();
+    await updateBooking(id, {
+      customerName: next.customerName,
+      customerPhone: next.customerPhone,
+      eventName: next.eventName,
+      startAt: next.startAt,
+      endAt: next.endAt,
+      status: next.status,
+      items: next.items,
+      subtotal: next.subtotal,
+      discountAmount: next.discountAmount,
+      total: next.total,
+      notes: next.notes,
+      deletedAt: next.deletedAt,
+    });
 
-  // Write audit log if there were changes
-  if (changes.length > 0) {
-    try {
-      // Build a concise note summarizing the updates
-      const formatVal = (value: unknown): string => {
-        if (value === null || typeof value === "undefined") return "—";
-        if (value instanceof Date) return value.toISOString();
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
-        try {
-          return JSON.stringify(value);
-        } catch {
-          return String(value);
-        }
-      };
-      const note = changes
-        .map(c => `${c.key}: ${formatVal(c.oldValue)} -> ${formatVal(c.newValue)}`)
-        .join("; ");
-
-      await BookingAudit.create({
-        bookingId: booking._id,
-        action: "updated",
-        changes,
-        user: payload ? { id: payload.sub, email: payload.email, role: payload.role } : undefined,
-        note,
-      });
-    } catch {}
-  }
+    if (changes.length > 0) {
+      try {
+        const formatVal = (value: unknown): string => {
+          if (value === null || typeof value === "undefined") return "—";
+          if (value instanceof Date) return value.toISOString();
+          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+          try {
+            return JSON.stringify(value);
+          } catch {
+            return String(value);
+          }
+        };
+        const note = changes.map((change) => `${change.key}: ${formatVal(change.oldValue)} -> ${formatVal(change.newValue)}`).join("; ");
+        await createBookingAudit({
+          bookingId: booking._id,
+          action: "updated",
+          changes,
+          user: { id: payload.sub, email: payload.email, role: payload.role },
+          note,
+        });
+      } catch (auditErr) {
+        console.error("Failed to write booking audit", auditErr);
+      }
+    }
 
     return NextResponse.json({ message: "Booking updated successfully" });
   } catch (err) {
@@ -274,31 +246,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const id = (await params).id;
-    const booking = await Booking.findById(id);
+    const booking = await findBookingById(id);
     if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Soft delete
-    booking.deletedAt = new Date();
-    await booking.save();
+    const deletedAt = new Date();
+    await updateBooking(id, { deletedAt });
 
-    // Write audit log
     try {
-      await BookingAudit.create({
+      await createBookingAudit({
         bookingId: booking._id,
         action: "deleted",
-        changes: [{ key: "deletedAt", oldValue: null, newValue: booking.deletedAt }],
+        changes: [{ key: "deletedAt", oldValue: null, newValue: deletedAt }],
         user: { id: payload.sub, email: payload.email, role: payload.role },
         note: "Booking was soft deleted",
       });
-    } catch {}
+    } catch (auditErr) {
+      console.error("Failed to write booking audit", auditErr);
+    }
 
     return NextResponse.json({ message: "Booking deleted successfully" });
   } catch (err) {
@@ -306,5 +276,3 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-

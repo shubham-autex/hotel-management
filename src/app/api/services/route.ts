@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { FilterQuery } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
-import { Service, type IService } from "@/models/Service";
+import { createService, listServices } from "@/db/services";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const pricingElementSchema = z.discriminatedUnion("type", [
@@ -27,8 +25,6 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) {
@@ -40,13 +36,12 @@ export async function POST(req: NextRequest) {
 
     const json = await req.json();
     const data = bodySchema.parse(json);
-
-    const created = await Service.create({
+    const created = await createService({
       ...data,
       isActive: data.isActive ?? true,
     });
 
-    return NextResponse.json({ id: created.id });
+    return NextResponse.json({ id: created._id });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -58,8 +53,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) {
@@ -71,32 +64,15 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const q = url.searchParams.get("q") || "";
     const isActive = url.searchParams.get("isActive");
-
     const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
-    
-    const filter: FilterQuery<IService> = {};
-    // Filter out deleted items unless admin explicitly requests them
-    if (!showDeleted) {
-      filter.deletedAt = null;
-    } else {
-      filter.deletedAt = { $ne: null };
-    }
-    
-    if (q) {
-      filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-      ];
-    }
-    if (isActive !== null && isActive !== "") {
-      filter.isActive = isActive === "true";
-    }
 
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      Service.find(filter).skip(skip).limit(limit).lean<IService[]>(),
-      Service.countDocuments(filter),
-    ]);
+    const { items, total } = await listServices({
+      page,
+      limit,
+      q: q || undefined,
+      isActive: isActive === null || isActive === "" ? undefined : isActive === "true",
+      showDeleted,
+    });
 
     return NextResponse.json({
       items,

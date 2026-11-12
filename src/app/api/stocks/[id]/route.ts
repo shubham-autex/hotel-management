@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { connectToDatabase } from "@/lib/db";
-import { Stock, type IStock } from "@/models/Stock";
-import { StockAudit } from "@/models/StockAudit";
+import { createStockAudit, deleteStock, findStockById, updateStock } from "@/db/stocks";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
+import type { AuditChange } from "@/db/types";
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
@@ -13,15 +12,13 @@ const patchSchema = z.object({
   minThreshold: z.number().min(0).optional(),
 });
 type PatchPayload = z.infer<typeof patchSchema>;
-type AuditChange = { key: string; oldValue: unknown; newValue: unknown };
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
     const { id } = await context.params;
-    const stock = await Stock.findById(id).lean<IStock | null>();
+    const stock = await findStockById(id);
     if (!stock) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(stock);
   } catch (err) {
@@ -32,8 +29,6 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,40 +38,37 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const json = await req.json();
     const data: PatchPayload = patchSchema.parse(json);
 
-    const stock = await Stock.findById(id);
+    const stock = await findStockById(id);
     if (!stock) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const oldStock = stock.toObject();
     const changes: AuditChange[] = [];
-    const mutableStock = stock as any;
-
-    // Track changes
-    Object.entries(data).forEach(([key, newVal]) => {
+    const patch: PatchPayload = {};
+    (Object.entries(data) as [keyof PatchPayload, PatchPayload[keyof PatchPayload]][]).forEach(([key, newVal]) => {
       if (typeof newVal === "undefined") return;
-      const oldVal = (oldStock as any)[key];
+      const oldVal = stock[key];
       if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
         changes.push({ key, oldValue: oldVal ?? null, newValue: newVal });
-        mutableStock[key] = newVal as never;
+        patch[key] = newVal as never;
       }
     });
 
-    await stock.save();
+    if (Object.keys(patch).length > 0) {
+      await updateStock(id, patch);
+    }
 
-    // Write audit log if there were changes
     if (changes.length > 0) {
       try {
-        const formatVal = (v: unknown) => {
-          if (v === null || typeof v === "undefined") return "—";
-          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+        const formatVal = (value: unknown) => {
+          if (value === null || typeof value === "undefined") return "—";
+          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
           try {
-            return JSON.stringify(v);
+            return JSON.stringify(value);
           } catch {
-            return String(v);
+            return String(value);
           }
         };
-        const note = changes.map((c) => `${c.key}: ${formatVal(c.oldValue)} → ${formatVal(c.newValue)}`).join("; ");
-
-        await StockAudit.create({
+        const note = changes.map((change) => `${change.key}: ${formatVal(change.oldValue)} → ${formatVal(change.newValue)}`).join("; ");
+        await createStockAudit({
           stockId: stock._id,
           action: "updated",
           changes,
@@ -98,23 +90,20 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
-    const stock = await Stock.findById(id);
+    const stock = await findStockById(id);
     if (!stock) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Write audit log before deletion
     try {
-      await StockAudit.create({
+      await createStockAudit({
         stockId: stock._id,
         action: "deleted",
-        changes: [{ key: "deleted", oldValue: stock.toObject(), newValue: null }],
+        changes: [{ key: "deleted", oldValue: stock, newValue: null }],
         user: { id: payload.sub, email: payload.email, role: payload.role },
         note: `Stock item "${stock.name}" was deleted`,
       });
@@ -122,12 +111,10 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       console.error("Failed to write audit log:", auditErr);
     }
 
-    await Stock.findByIdAndDelete(id);
-
+    await deleteStock(id);
     return NextResponse.json({ message: "Stock deleted successfully" });
   } catch (err) {
     console.error("Failed to delete stock", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

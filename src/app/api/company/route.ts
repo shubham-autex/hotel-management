@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { connectToDatabase } from "@/lib/db";
+import { getCompanyProfile, upsertCompanyProfile } from "@/db/company";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { CompanyProfile } from "@/models/CompanyProfile";
 
 const bodySchema = z.object({
   name: z.string().min(1),
@@ -19,13 +18,11 @@ function assertAdmin(role?: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const doc = await CompanyProfile.findOne().lean();
+    const doc = await getCompanyProfile();
     return NextResponse.json(doc || {});
   } catch (err) {
     console.error("Failed to fetch company profile", err);
@@ -35,8 +32,6 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload || !assertAdmin(payload.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -45,13 +40,10 @@ export async function PUT(req: NextRequest) {
     const parsed = bodySchema.safeParse(json);
     if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-    const update = parsed.data;
-    const doc = await CompanyProfile.findOneAndUpdate({}, update, { upsert: true, new: true, setDefaultsOnInsert: true });
-    return NextResponse.json({ ok: true, id: String(doc._id) });
+    const doc = await upsertCompanyProfile(parsed.data);
+    return NextResponse.json({ ok: true, id: doc._id });
   } catch (err) {
     console.error("Failed to update company profile", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-

@@ -1,36 +1,51 @@
-import mongoose from "mongoose";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "@/db/schema";
+import { SCHEMA_SQL } from "@/db/schema.sql";
+import { requiredEnv } from "@/lib/env";
 
-type MongooseCache = {
-  conn: mongoose.Connection | null;
-  promise: Promise<mongoose.Connection> | null;
+type Database = PostgresJsDatabase<typeof schema>;
+
+const globalForDb = globalThis as typeof globalThis & {
+  _pg?: ReturnType<typeof postgres>;
+  _pgReady?: Promise<void>;
+  _drizzle?: Database;
 };
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-const MONGODB_DB = process.env.MONGODB_DB as string;
-
-if (!MONGODB_URI) {
-  throw new Error("Missing MONGODB_URI environment variable");
-}
-
-const globalForMongoose = globalThis as typeof globalThis & {
-  _mongoose?: MongooseCache;
-};
-
-const cached: MongooseCache =
-  globalForMongoose._mongoose ?? (globalForMongoose._mongoose = { conn: null, promise: null });
-
-export async function connectToDatabase(): Promise<mongoose.Connection> {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    cached.promise = mongoose
-      .connect(MONGODB_URI, {
-        dbName: MONGODB_DB
-      })
-      .then((m) => m.connection);
+function getSql() {
+  const url = requiredEnv("DATABASE_URL");
+  if (!globalForDb._pg) {
+    globalForDb._pg = postgres(url, { max: 10, prepare: false });
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  return globalForDb._pg;
 }
 
+export async function connectToDatabase(): Promise<void> {
+  const sql = getSql();
+  if (!globalForDb._pgReady) {
+    const statements = SCHEMA_SQL.split(/;\s*\n/)
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    globalForDb._pgReady = (async () => {
+      for (const statement of statements) {
+        await sql.unsafe(statement);
+      }
+    })().catch((err) => {
+      globalForDb._pgReady = undefined;
+      throw err;
+    });
+  }
+  await globalForDb._pgReady;
+}
 
+export function getDb(): Database {
+  if (!globalForDb._drizzle) {
+    globalForDb._drizzle = drizzle(getSql(), { schema });
+  }
+  return globalForDb._drizzle;
+}
+
+export async function db(): Promise<Database> {
+  await connectToDatabase();
+  return getDb();
+}

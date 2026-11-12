@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { connectToDatabase } from "@/lib/db";
-import { User } from "@/models/User";
+import { createUser, findUserByEmail } from "@/db/users";
+import { env } from "@/lib/env";
 
-// Simple guard using an env token to prevent public abuse
 export async function POST(req: NextRequest) {
   const token = req.headers.get("x-seed-token");
-  if (!process.env.SEED_TOKEN || token !== process.env.SEED_TOKEN) {
+  const seedToken = env("SEED_TOKEN");
+  if (!seedToken || token !== seedToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await connectToDatabase();
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+  const adminEmail = env("ADMIN_EMAIL") || "admin@example.com";
+  const adminPassword = env("ADMIN_PASSWORD") || "Admin@123";
 
-  const existing = await User.findOne({ email: adminEmail });
+  const existing = await findUserByEmail(adminEmail);
   if (existing) {
     return NextResponse.json({ message: "Admin already exists" });
   }
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
-  await User.create({ email: adminEmail, passwordHash, role: "admin" });
+  await createUser({ email: adminEmail, passwordHash, role: "admin" });
   return NextResponse.json({ message: "Admin created", email: adminEmail });
 }
-
-

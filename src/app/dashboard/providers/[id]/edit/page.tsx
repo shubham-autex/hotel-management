@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Provider } from "@/models/Provider";
+import { findProviderById } from "@/db/providers";
 import EditClient from "./EditClient";
 
 export default async function ProviderEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +15,8 @@ export default async function ProviderEditPage({ params }: { params: Promise<{ i
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const provider = await Provider.findById(id).populate("service", "name").lean();
+  const provider = await findProviderById(id);
   if (!provider) {
     return <div className="p-4">Provider not found</div>;
   }

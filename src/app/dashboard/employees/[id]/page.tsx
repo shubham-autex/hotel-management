@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
-import { connectToDatabase } from "@/lib/db";
-import { Employee } from "@/models/Employee";
+import { findEmployeeById } from "@/db/employees";
 
 export default async function EmployeeViewPage({ params }: { params: Promise<{ id: string }> }) {
-  await connectToDatabase();
   const { id } = await params;
-  const emp = await Employee.findById(id).lean();
+  const emp = await findEmployeeById(id);
   if (!emp) return notFound();
   return (
     <div className="space-y-6">

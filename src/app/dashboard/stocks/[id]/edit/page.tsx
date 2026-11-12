@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Stock } from "@/models/Stock";
+import { findStockById } from "@/db/stocks";
 import EditStockClient from "./EditStockClient";
 
 export default async function EditStockPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,9 +16,8 @@ export default async function EditStockPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const stock = await Stock.findById(id).lean();
+  const stock = await findStockById(id);
 
   if (!stock) {
     return <div className="p-4">Stock item not found</div>;

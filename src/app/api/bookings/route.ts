@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { FilterQuery, Types } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
+import {
+  countBookingConflicts,
+  createBooking,
+  createBookingAudit,
+  listBookings,
+} from "@/db/bookings";
+import { findActiveServicesByIds } from "@/db/services";
+import { isUuid } from "@/db/helpers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { Booking, type IBooking, type IBookingItem } from "@/models/Booking";
-import { Service, type IService } from "@/models/Service";
-import { BookingAudit } from "@/models/BookingAudit";
+import type { BookingItem } from "@/db/types";
 
 const bookingItemSchema = z.object({
   serviceId: z.string(),
@@ -39,72 +43,58 @@ function calculateItemTotal(item: z.infer<typeof bookingItemSchema>): number {
     const price = (item.unitPrice ?? 0) * (item.units ?? 0);
     return Math.max(0, price - discount);
   }
-  // custom
   return Math.max(0, (item.customPrice ?? 0) - discount);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const json = await req.json();
-    console.log(JSON.stringify(json, null, 2));
     const parsed = bodySchema.safeParse(json);
-    console.log(JSON.stringify(parsed, null, 2));
     if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     const { customerName, customerPhone, eventName, startAt, endAt, items, discountAmount = 0, notes, status } = parsed.data;
     if (!(startAt instanceof Date) || !(endAt instanceof Date) || isNaN(+startAt) || isNaN(+endAt) || startAt >= endAt) {
       return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     }
+    if (items.some((item) => !isUuid(item.serviceId))) {
+      return NextResponse.json({ error: "Invalid service id" }, { status: 400 });
+    }
 
-    // Load services referenced, to verify allowOverlap and names (exclude deleted)
-    const serviceObjectIds = items.map((i) => new Types.ObjectId(i.serviceId));
-    const services = await Service.find({ _id: { $in: serviceObjectIds }, deletedAt: null }).lean<IService[]>();
-    const serviceById = new Map(services.map((s) => [String(s._id), s]));
-
-    // Overlap check for any service where allowOverlap = false
-    const nonOverlapServiceIds = services
-      .filter((s) => !s.allowOverlap && !s.deletedAt)
-      .map((s) => s._id);
+    const services = await findActiveServicesByIds(items.map((item) => item.serviceId));
+    const serviceById = new Map(services.map((service) => [service._id, service]));
+    const nonOverlapServiceIds = services.filter((service) => !service.allowOverlap).map((service) => service._id);
     if (nonOverlapServiceIds.length > 0) {
-      const conflicts = await Booking.find({
-        $or: [
-          { startAt: { $lt: endAt }, endAt: { $gt: startAt } },
-        ],
-        "items.serviceId": { $in: nonOverlapServiceIds },
-        deletedAt: null,
-      }).countDocuments();
+      const conflicts = await countBookingConflicts({ startAt, endAt, serviceIds: nonOverlapServiceIds });
       if (conflicts > 0) {
         return NextResponse.json({ error: "Selected services are not available in this time range" }, { status: 409 });
       }
     }
 
-    const computedItems: IBookingItem[] = items.map((it) => {
-      const svc = serviceById.get(it.serviceId);
-      const total = calculateItemTotal(it);
+    const computedItems: BookingItem[] = items.map((item) => {
+      const svc = serviceById.get(item.serviceId);
       return {
-        serviceId: new Types.ObjectId(it.serviceId),
+        serviceId: item.serviceId,
         serviceName: svc?.name ?? "Unknown",
         allowOverlap: !!svc?.allowOverlap,
-        variantName: it.variantName,
-        priceType: it.priceType,
-        unitPrice: it.unitPrice,
-        units: it.units,
-        customPrice: it.customPrice,
-        discountAmount: it.discountAmount ?? 0,
-        total,
+        variantName: item.variantName,
+        priceType: item.priceType,
+        unitPrice: item.unitPrice,
+        units: item.units,
+        customPrice: item.customPrice,
+        discountAmount: item.discountAmount ?? 0,
+        total: calculateItemTotal(item),
       };
     });
 
-    const subtotal = computedItems.reduce((sum, it) => sum + it.total, 0);
+    const subtotal = computedItems.reduce((sum, item) => sum + item.total, 0);
     const total = Math.max(0, subtotal - (discountAmount ?? 0));
+    const bookingStatus = status ?? "pending";
 
-    console.log(JSON.stringify({
+    const created = await createBooking({
       customerName,
       customerPhone,
       eventName,
@@ -115,64 +105,32 @@ export async function POST(req: NextRequest) {
       discountAmount,
       total,
       notes,
-      status,
-    }));
+      status: bookingStatus,
+    });
 
-    // Build create document; only include status if provided so schema default applies
-    type CreateBookingInput = Pick<
-      IBooking,
-      | "customerName"
-      | "customerPhone"
-      | "eventName"
-      | "startAt"
-      | "endAt"
-      | "items"
-      | "subtotal"
-      | "discountAmount"
-      | "total"
-      | "notes"
-      | "status"
-    >;
-
-    const createDoc: CreateBookingInput = {
-      customerName,
-      customerPhone,
-      eventName,
-      startAt,
-      endAt,
-      items: computedItems,
-      subtotal,
-      discountAmount,
-      total,
-      notes,
-      status: status ?? "pending",
-    };
-
-    const created = await Booking.create(createDoc);
-
-    // Write audit log for creation with initial values as changes (oldValue null)
     try {
-      const changes = [
-        { key: "customerName", oldValue: null, newValue: customerName },
-        { key: "customerPhone", oldValue: null, newValue: customerPhone ?? null },
-        { key: "eventName", oldValue: null, newValue: eventName },
-        { key: "startAt", oldValue: null, newValue: startAt },
-        { key: "endAt", oldValue: null, newValue: endAt },
-        { key: "subtotal", oldValue: null, newValue: subtotal },
-        { key: "discountAmount", oldValue: null, newValue: discountAmount ?? 0 },
-        { key: "total", oldValue: null, newValue: total },
-        { key: "status", oldValue: null, newValue: typeof createDoc.status !== "undefined" ? createDoc.status : "pending" },
-      ];
-      await BookingAudit.create({ 
-        bookingId: created._id, 
-        action: "created", 
-        changes, 
-        user: payload ? { id: payload.sub, email: payload.email, role: payload.role } : undefined,
-        note: "Booking is created"
+      await createBookingAudit({
+        bookingId: created._id,
+        action: "created",
+        changes: [
+          { key: "customerName", oldValue: null, newValue: customerName },
+          { key: "customerPhone", oldValue: null, newValue: customerPhone ?? null },
+          { key: "eventName", oldValue: null, newValue: eventName },
+          { key: "startAt", oldValue: null, newValue: startAt },
+          { key: "endAt", oldValue: null, newValue: endAt },
+          { key: "subtotal", oldValue: null, newValue: subtotal },
+          { key: "discountAmount", oldValue: null, newValue: discountAmount ?? 0 },
+          { key: "total", oldValue: null, newValue: total },
+          { key: "status", oldValue: null, newValue: bookingStatus },
+        ],
+        user: { id: payload.sub, email: payload.email, role: payload.role },
+        note: "Booking is created",
       });
-    } catch {}
+    } catch (auditErr) {
+      console.error("Failed to write booking audit", auditErr);
+    }
 
-    return NextResponse.json({ id: created.id }, { status: 201 });
+    return NextResponse.json({ id: created._id }, { status: 201 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -181,8 +139,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -197,119 +153,27 @@ export async function GET(req: NextRequest) {
     const showDeleted = url.searchParams.get("deleted") === "true" && payload.role === "admin";
     const startDateParam = url.searchParams.get("startDate");
     const endDateParam = url.searchParams.get("endDate");
-    
-    const filter: FilterQuery<IBooking> = {};
-    const andConditions: FilterQuery<IBooking>[] = [];
-    
-    // Filter out deleted items unless admin explicitly requests them
-    if (!showDeleted) {
-      filter.deletedAt = null;
-    } else {
-      filter.deletedAt = { $ne: null };
-    }
-    
-    // Date range filter - filter bookings that overlap with the requested date range
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
     if (startDateParam && endDateParam) {
-      const startDate = new Date(startDateParam);
-      const endDate = new Date(endDateParam);
+      startDate = new Date(startDateParam);
+      endDate = new Date(endDateParam);
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
-      
-      // Find bookings where the booking's date range overlaps with the filter range
-      // Booking overlaps if: booking.startAt <= filter.endDate AND booking.endAt >= filter.startDate
-      andConditions.push(
-        { startAt: { $lte: endDate } },
-        { endAt: { $gte: startDate } }
-      );
-    }
-    
-    if (q) {
-      andConditions.push({
-        $or: [
-          { customerName: { $regex: q, $options: "i" } },
-          { customerPhone: { $regex: q, $options: "i" } },
-          { eventName: { $regex: q, $options: "i" } },
-        ]
-      });
-    }
-    
-    if (status) {
-      andConditions.push({ status });
-    }
-    
-    // Combine all conditions
-    if (andConditions.length > 0) {
-      filter.$and = andConditions;
     }
 
-    // Build sort object
-    const sortObj: Record<string, 1 | -1> = {};
-    const sortDirection = sortOrder === "asc" ? 1 : -1;
-    sortObj[sortBy] = sortDirection;
-
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      Booking.aggregate([
-        { $match: filter },
-        { $sort: sortObj },
-        { $skip: skip },
-        { $limit: limit },
-        {
-          $lookup: {
-            from: "payments",
-            localField: "_id",
-            foreignField: "bookingId",
-            as: "_payments",
-          },
-        },
-        {
-          $addFields: {
-            _receivedSum: {
-              $sum: {
-                $map: {
-                  input: {
-                    $filter: {
-                      input: "$_payments",
-                      as: "p",
-                      cond: { $eq: ["$$p.type", "received"] },
-                    },
-                  },
-                  as: "p",
-                  in: { $ifNull: ["$$p.amount", 0] },
-                },
-              },
-            },
-            _refundSum: {
-              $sum: {
-                $map: {
-                  input: {
-                    $filter: {
-                      input: "$_payments",
-                      as: "p",
-                      cond: { $eq: ["$$p.type", "refund"] },
-                    },
-                  },
-                  as: "p",
-                  in: { $ifNull: ["$$p.amount", 0] },
-                },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            totalPaid: {
-              $subtract: [
-                "$total",
-                { $subtract: ["$_receivedSum", "$_refundSum"] },
-              ],
-            },
-          },
-        },
-        { $project: { _payments: 0, _receivedSum: 0, _refundSum: 0 } },
-      ]).exec(),
-      Booking.countDocuments(filter),
-    ]);
+    const { items, total } = await listBookings({
+      page,
+      limit,
+      q: q || undefined,
+      status: status || undefined,
+      sortBy,
+      sortOrder,
+      showDeleted,
+      startDate,
+      endDate,
+    });
 
     return NextResponse.json({ items, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) {
@@ -317,5 +181,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-

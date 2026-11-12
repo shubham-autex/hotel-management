@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Payment } from "@/models/Payment";
-import { PaymentLog } from "@/models/PaymentLog";
+import { findPaymentById, listPaymentLogs } from "@/db/payments";
 import { DollarSign, ArrowLeft, ArrowDownRight, ArrowUpRight, Plus, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import PaymentLogsClient from "./PaymentLogsClient";
@@ -21,19 +19,16 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const payment = await Payment.findById(id).lean();
+  const payment = await findPaymentById(id);
 
   if (!payment) {
     return <div className="p-4">Payment not found</div>;
   }
 
-  const logs = await PaymentLog.find({ paymentId: id })
-    .sort({ date: -1 })
-    .lean();
+  const logs = await listPaymentLogs(id);
 
-  const formatFrequency = (freq?: string) => {
+  const formatFrequency = (freq?: string | null) => {
     if (!freq) return "";
     const map: Record<string, string> = {
       monthly: "Monthly",

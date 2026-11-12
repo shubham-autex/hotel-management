@@ -25,13 +25,32 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 Create a `.env.local` in the project root with:
 
 ```
-MONGODB_URI=mongodb+srv://USER:PASS@HOST/db
-MONGODB_DB=hotel_admin
+DATABASE_URL=postgres://USER:PASS@localhost:5432/hotel_admin
 JWT_SECRET=replace-with-long-random-string
 SEED_TOKEN=replace-with-one-time-token
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=Admin@123
 ```
+
+Tables are created automatically the first time the app connects. PostgreSQL 14 or newer is required.
+
+## Docker
+
+`docker compose up --build` starts Postgres 16 and the app at [http://localhost:3000](http://localhost:3000).
+
+The database is `hotel_admin`, user `hotel`, password `hotel`. From the host:
+
+```
+DATABASE_URL=postgres://hotel:hotel@localhost:5432/hotel_admin
+```
+
+To run only the database and use `npm run dev` on the host:
+
+```bash
+docker compose up db
+```
+
+Override `JWT_SECRET`, `SEED_TOKEN`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` in the environment before `docker compose up` when you do not want the development defaults.
 
 ## Auth
 - Email/password login at `/login` calls `/api/auth/login`.

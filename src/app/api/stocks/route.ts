@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { FilterQuery } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
-import { Stock, type IStock } from "@/models/Stock";
-import { StockAudit } from "@/models/StockAudit";
+import { createStock, createStockAudit, listStocks } from "@/db/stocks";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const bodySchema = z.object({
@@ -17,8 +14,6 @@ type StockPayload = z.infer<typeof bodySchema>;
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,20 +22,18 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const data: StockPayload = bodySchema.parse(json);
 
-    const created = await Stock.create({
+    const created = await createStock({
       ...data,
       unit: data.unit || "pieces",
     });
 
-    // Write audit log for creation
     try {
       const changes = Object.entries(data).map(([key, value]) => ({
         key,
         oldValue: null,
         newValue: value ?? null,
       }));
-
-      await StockAudit.create({
+      await createStockAudit({
         stockId: created._id,
         action: "created",
         changes,
@@ -51,7 +44,7 @@ export async function POST(req: NextRequest) {
       console.error("Failed to write audit log:", auditErr);
     }
 
-    return NextResponse.json({ id: created.id }, { status: 201 });
+    return NextResponse.json({ id: created._id }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -63,8 +56,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,52 +66,15 @@ export async function GET(req: NextRequest) {
     const q = url.searchParams.get("q") || "";
     const lowStock = url.searchParams.get("lowStock") === "true";
 
-    const filter: FilterQuery<IStock> = {};
-    
-    if (q) {
-      filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-      ];
-    }
-
-    if (lowStock) {
-      // Get all items matching the search filter, then filter for low stock
-      const allItems = await Stock.find(filter).lean<IStock[]>();
-      const filteredItems = allItems.filter((item) => {
-        if (item.quantity <= 0) return true;
-        if (typeof item.minThreshold === "number" && item.quantity <= item.minThreshold) return true;
-        return false;
-      });
-      const skip = (page - 1) * limit;
-      const paginatedItems = filteredItems.slice(skip, skip + limit);
-      const itemsWithLowStock = paginatedItems.map((item) => ({
-        ...item,
-        isLowStock: true,
-      }));
-      return NextResponse.json({
-        items: itemsWithLowStock,
-        total: filteredItems.length,
-        page,
-        limit,
-        pages: Math.ceil(filteredItems.length / limit),
-      });
-    }
-
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      Stock.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).lean<IStock[]>(),
-      Stock.countDocuments(filter),
-    ]);
-    
-    // Mark low stock items
-    const itemsWithLowStock = items.map((item) => ({
-      ...item,
-      isLowStock: item.quantity <= 0 || (typeof item.minThreshold === "number" && item.quantity <= item.minThreshold),
-    }));
+    const { items, total } = await listStocks({
+      page,
+      limit,
+      q: q || undefined,
+      lowStock,
+    });
 
     return NextResponse.json({
-      items: itemsWithLowStock,
+      items,
       total,
       page,
       limit,
@@ -131,4 +85,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Payment } from "@/models/Payment";
+import { findPaymentById } from "@/db/payments";
 import EditPaymentClient from "./EditPaymentClient";
 
 export default async function EditPaymentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,9 +16,8 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const payment = await Payment.findById(id).lean();
+  const payment = await findPaymentById(id);
 
   if (!payment) {
     return <div className="p-4">Payment not found</div>;

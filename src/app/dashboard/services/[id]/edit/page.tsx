@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Service } from "@/models/Service";
+import { findServiceById } from "@/db/services";
 import EditClient from "./EditClient";
 
 export default async function ServiceEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +15,8 @@ export default async function ServiceEditPage({ params }: { params: Promise<{ id
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const svc = await Service.findById(id).lean();
+  const svc = await findServiceById(id);
   if (!svc) {
     return <div className="p-4">Service not found</div>;
   }

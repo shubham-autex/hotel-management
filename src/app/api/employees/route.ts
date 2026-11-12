@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { FilterQuery } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
-import { Employee, DEPARTMENTS, ID_PROOF_TYPES, generateNextEmployeeCode, type IEmployee } from "@/models/Employee";
 import bcrypt from "bcryptjs";
-import { User } from "@/models/User";
 import crypto from "crypto";
+import { createEmployee, generateNextEmployeeCode, listEmployees } from "@/db/employees";
+import { createUser, findUserByEmail } from "@/db/users";
+import { DEPARTMENTS, ID_PROOF_TYPES } from "@/lib/constants/employee";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
-const bankSchema = z.object({
-  name: z.string().optional(),
-  ifscCode: z.string().optional(),
-  accountNumber: z.string().optional(),
-  passbookPhoto: z.string().optional(),
-}).optional();
+const bankSchema = z
+  .object({
+    name: z.string().optional(),
+    ifscCode: z.string().optional(),
+    accountNumber: z.string().optional(),
+    passbookPhoto: z.string().optional(),
+  })
+  .optional();
 
 const bodySchema = z.object({
   name: z.string().min(1),
@@ -36,9 +37,6 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // simple auth check
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) {
@@ -51,29 +49,42 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const data = bodySchema.parse(json);
 
-    const employeeCode = await generateNextEmployeeCode();
-
-    const created = await Employee.create({
-      ...data,
-      employeeCode,
-      dateOfJoining: data.dateOfJoining,
-      isActive: data.isActive ?? true,
-    });
-
-    let managerCredentials: { email?: string; password: string } | undefined;
     const shouldCreateUser = data.department === "Management" && data.email && (data.createUser ?? true);
-    if (shouldCreateUser) {
-      const existing = await User.findOne({ email: data.email });
+    if (shouldCreateUser && data.email) {
+      const existing = await findUserByEmail(data.email);
       if (existing) {
         return NextResponse.json({ error: "Email already exists for a user" }, { status: 409 });
       }
+    }
+
+    const employeeCode = await generateNextEmployeeCode();
+    const created = await createEmployee({
+      name: data.name,
+      employeeCode,
+      department: data.department,
+      age: data.age,
+      gender: data.gender,
+      isActive: data.isActive ?? true,
+      phoneNumber: data.phoneNumber,
+      address: data.address,
+      pincode: data.pincode,
+      idProofType: data.idProofType,
+      idProofNumber: data.idProofNumber,
+      idProofPhotos: data.idProofPhotos,
+      dateOfJoining: data.dateOfJoining,
+      bankDetail: data.bankDetail,
+      photo: data.photo,
+    });
+
+    let managerCredentials: { email?: string; password: string } | undefined;
+    if (shouldCreateUser && data.email) {
       const password = crypto.randomBytes(12).toString("base64url").slice(0, 12);
       const passwordHash = await bcrypt.hash(password, 10);
-      await User.create({ email: data.email, passwordHash, role: "manager" });
+      await createUser({ email: data.email, passwordHash, role: "manager" });
       managerCredentials = { email: data.email, password };
     }
 
-    return NextResponse.json({ id: created.id, employeeCode, managerCredentials });
+    return NextResponse.json({ id: created._id, employeeCode, managerCredentials });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -85,38 +96,16 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
     const { searchParams } = new URL(req.url);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "10", 10), 1), 50);
     const department = searchParams.get("department") || undefined;
     const q = searchParams.get("q") || undefined;
 
-    const filter: FilterQuery<IEmployee> = {};
-    if (department) filter.department = department as IEmployee["department"];
-    if (q) {
-      filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { employeeCode: { $regex: q, $options: "i" } },
-        { phoneNumber: { $regex: q, $options: "i" } },
-      ];
-    }
-
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      Employee.find(filter, { name: 1, employeeCode: 1, department: 1, phoneNumber: 1, photo: 1, isActive: 1, createdAt: 1 })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Employee.countDocuments(filter),
-    ]);
-
+    const { items, total } = await listEmployees({ page, limit, department, q });
     return NextResponse.json({ items, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) {
     console.error("Failed to fetch employees", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-

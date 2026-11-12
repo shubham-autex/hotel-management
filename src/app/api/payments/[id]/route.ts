@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { connectToDatabase } from "@/lib/db";
-import { Payment, type IPayment } from "@/models/Payment";
+import { deletePayment, findPaymentById, updatePayment } from "@/db/payments";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const patchSchema = z.object({
@@ -20,15 +19,13 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
-    const payment = await Payment.findById(id).lean<IPayment | null>();
+    const payment = await findPaymentById(id);
     if (!payment) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(payment);
   } catch (err) {
@@ -39,8 +36,6 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,15 +45,14 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const json = await req.json();
     const data = patchSchema.parse(json);
 
-    // Validate recurring payments have frequency
     if (data.type === "recurring" && !data.frequency) {
-      const existing = await Payment.findById(id).lean<IPayment | null>();
+      const existing = await findPaymentById(id);
       if (!existing || existing.type !== "recurring") {
         return NextResponse.json({ error: "Frequency is required for recurring payments" }, { status: 400 });
       }
     }
 
-    const updated = await Payment.findByIdAndUpdate(id, data, { new: true });
+    const updated = await updatePayment(id, data);
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ success: true });
@@ -71,27 +65,19 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
-    const payment = await Payment.findById(id);
-    if (!payment) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const existing = await findPaymentById(id);
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Delete all associated payment logs first
-    const { PaymentLog } = await import("@/models/PaymentLog");
-    await PaymentLog.deleteMany({ paymentId: id });
-
-    await Payment.findByIdAndDelete(id);
-
+    await deletePayment(id);
     return NextResponse.json({ message: "Payment deleted successfully" });
   } catch (err) {
     console.error("Failed to delete payment", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

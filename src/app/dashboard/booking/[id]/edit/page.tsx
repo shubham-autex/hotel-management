@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/db";
-import { Booking } from "@/models/Booking";
+import { findBookingById } from "@/db/bookings";
 import EditBookingForm from "./EditBookingForm";
 import BookingEditClient from "./BookingEditClient";
 
@@ -17,9 +16,8 @@ export default async function BookingEditPage({ params }: { params: Promise<{ id
     );
   }
 
-  await connectToDatabase();
   const { id } = await params;
-  const booking = await Booking.findById(id).lean();
+  const booking = await findBookingById(id);
   if (!booking) {
     return (
       <div className="p-4">

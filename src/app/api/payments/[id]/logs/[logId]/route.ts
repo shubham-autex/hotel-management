@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { connectToDatabase } from "@/lib/db";
-import { PaymentLog } from "@/models/PaymentLog";
+import { deletePaymentLog, updatePaymentLog } from "@/db/payments";
 import { AUTH_COOKIE, verifyAuthToken } from "@/lib/auth";
 
 const patchSchema = z.object({
@@ -16,8 +15,6 @@ type RouteContext = { params: Promise<{ id: string; logId: string }> };
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,7 +24,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const json = await req.json();
     const data = patchSchema.parse(json);
 
-    const updated = await PaymentLog.findByIdAndUpdate(logId, data, { new: true });
+    const updated = await updatePaymentLog(logId, data);
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ success: true });
@@ -40,16 +37,14 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    await connectToDatabase();
-
     const token = req.cookies.get(AUTH_COOKIE)?.value;
     const payload = token ? await verifyAuthToken(token) : null;
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { logId } = await context.params;
-    const log = await PaymentLog.findByIdAndDelete(logId);
-    if (!log) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const deleted = await deletePaymentLog(logId);
+    if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ message: "Payment log deleted successfully" });
   } catch (err) {
@@ -57,4 +52,3 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

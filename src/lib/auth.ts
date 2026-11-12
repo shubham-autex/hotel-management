@@ -1,10 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
+import { requiredEnv } from "@/lib/env";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error("Missing JWT_SECRET environment variable");
+function getSecretKey() {
+  return new TextEncoder().encode(requiredEnv("JWT_SECRET"));
 }
-const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 export type JwtPayload = {
   sub: string;
@@ -17,13 +16,13 @@ export async function createAuthToken(payload: JwtPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(secretKey);
+    .sign(getSecretKey());
   return token;
 }
 
 export async function verifyAuthToken(token: string): Promise<JwtPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, getSecretKey());
     return payload as unknown as JwtPayload;
   } catch {
     return null;

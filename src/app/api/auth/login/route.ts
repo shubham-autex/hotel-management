@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import bcrypt from "bcryptjs";
-import { connectToDatabase } from "@/lib/db";
-import { User } from "@/models/User";
+import { createUser, findUserByEmail } from "@/db/users";
 import { AUTH_COOKIE, createAuthToken, getCookieOptions } from "@/lib/auth";
 
 const bodySchema = z.object({
@@ -12,11 +11,10 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
     const json = await req.json();
     const { email, password } = bodySchema.parse(json);
 
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
@@ -26,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = await createAuthToken({ sub: user.id, email: user.email, role: user.role });
+    const token = await createAuthToken({ sub: user.id, email: user.email, role: user.role as "admin" | "manager" });
     const res = NextResponse.json({ success: true });
     res.cookies.set(AUTH_COOKIE, token, getCookieOptions());
     return res;
@@ -37,5 +35,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
-
